@@ -1,0 +1,26 @@
+{
+  "name": "godot-vrt",
+  "version": "1.0.0",
+  "description": "Godot アドオン — **visual regression test** の仕組みを Godot エンジンに追加します。**interaction test** サポートも今後追加予定です。",
+  "main": "none",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KantaiMishima/godot-vrt.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KantaiMishima/godot-vrt/issues"
+  },
+  "homepage": "https://github.com/KantaiMishima/godot-vrt#readme",
+  "devDependencies": {
+    "@argos-ci/cli": "^4.1.1"
+  }
+}
