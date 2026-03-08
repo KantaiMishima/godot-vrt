@@ -136,14 +136,17 @@ Pattern 3 は効果が限定的なため、今回は見送る。
 
 | Pattern | 状態 | 備考 |
 | --- | --- | --- |
-| Pattern 1 | **実装済み** | `capture.gd` の `seed(VRT_SEED)` で対応 |
+| Pattern 1 | **実装済み** | `capture.gd` の `seed(vrt_seed)` で対応 |
 | Pattern 2 | 未実装（将来の拡張候補） | 問題が発生したシーンに限り導入を検討 |
 | Pattern 3 | 見送り | 効果が限定的 |
+
+`capture.gd` は `VRT_SEEDS: Array[int] = [12345, 99999, 42]` を持ち、
+シーンごとに全 seed でキャプチャする。出力ファイルは `{scene}_s{seed}.png`。
 
 ---
 
 ## 進め方
 
-1. `capture.gd` に `seed(12345)` を追加（Pattern 1 の実装） ← **完了**
-2. 乱数を使うサンプルシーンを作成し、2回実行して同一性を確認 ← **完了**
+1. `capture.gd` に `seed(vrt_seed)` を追加（Pattern 1 の実装） ← **完了**
+2. 3 seed で実行し、再現性と seed 間の差異を確認 ← **完了**
 3. Pattern 2 は問題が起きたシーンが出た時点で対応する

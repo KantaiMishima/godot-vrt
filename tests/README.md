@@ -29,14 +29,26 @@ GODOT_MTL_OFF_SCREEN=1 /Applications/Godot.app/Contents/MacOS/Godot \
   -- res://random_test.tscn
 ```
 
-出力: `tests/vr_screenshots/random_test.png`
+出力: `tests/vr_screenshots/random_test_s12345.png`, `random_test_s99999.png`, `random_test_s42.png`
 
 ## 同一性検証（seed 固定の確認）
 
+同じ seed は再実行しても同一ファイルになることを確認する。
+
 ```bash
 # 1回目
-cp tests/vr_screenshots/random_test.png /tmp/run1.png
+cp tests/vr_screenshots/random_test_s12345.png /tmp/run1_s12345.png
 
 # 2回目（再実行後）
-cmp /tmp/run1.png tests/vr_screenshots/random_test.png && echo "IDENTICAL"
+cmp /tmp/run1_s12345.png tests/vr_screenshots/random_test_s12345.png && echo "IDENTICAL"
+```
+
+## seed による差異確認
+
+3 つの seed で出力が異なることを確認する。
+
+```bash
+cmp tests/vr_screenshots/random_test_s12345.png \
+    tests/vr_screenshots/random_test_s99999.png \
+    && echo "SAME (unexpected)" || echo "DIFFERENT (expected)"
 ```

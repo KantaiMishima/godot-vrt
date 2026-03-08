@@ -15,12 +15,12 @@ extends SceneTree
 ##     --rendering-driver metal \
 ##     --script /path/to/godot/tests/visual_regression/capture.gd
 ##
-## Output: {project_path}/vr_screenshots/{scene_name}.png
+## Output: {project_path}/vr_screenshots/{scene_name}_s{seed}.png
 
 const VIEWPORT_SIZE := Vector2i(1280, 720)
 const SETTLE_FRAMES := 5
 const OUTPUT_DIR := "vr_screenshots"
-const VRT_SEED := 12345
+const VRT_SEEDS: Array[int] = [12345, 99999, 42]
 
 func _initialize() -> void:
 	print("=== Godot Visual Regression Capture ===")
@@ -60,8 +60,13 @@ func _capture_scene(scene_path: String, output_dir: String) -> void:
 		printerr("  FAIL: Could not load scene: ", scene_path)
 		return
 
+	for vrt_seed in VRT_SEEDS:
+		await _capture_with_seed(scene_path, packed, output_dir, vrt_seed)
+
+
+func _capture_with_seed(scene_path: String, packed: PackedScene, output_dir: String, vrt_seed: int) -> void:
 	# Pattern 1: グローバル乱数 seed を固定（randf/randi 系を安定化）
-	seed(VRT_SEED)
+	seed(vrt_seed)
 
 	var vp := SubViewport.new()
 	vp.size = VIEWPORT_SIZE
@@ -78,15 +83,15 @@ func _capture_scene(scene_path: String, output_dir: String) -> void:
 
 	var img := vp.get_texture().get_image()
 	if img == null or img.is_empty():
-		printerr("  FAIL: image is null or empty")
+		printerr("  FAIL: image is null or empty (seed=", vrt_seed, ")")
 	else:
-		var file_name := scene_path.get_file().get_basename() + ".png"
+		var file_name := scene_path.get_file().get_basename() + "_s" + str(vrt_seed) + ".png"
 		var save_path := output_dir.path_join(file_name)
 		var err := img.save_png(save_path)
 		if err == OK:
-			print("  Saved: ", save_path)
+			print("  Saved: ", save_path, " (seed=", vrt_seed, ")")
 		else:
-			printerr("  FAIL: Could not save PNG (err=", err, ")")
+			printerr("  FAIL: Could not save PNG (err=", err, ", seed=", vrt_seed, ")")
 
 	if is_instance_valid(scene_node):
 		scene_node.queue_free()
