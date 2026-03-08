@@ -125,12 +125,25 @@ capture.gd の処理順序:
 - **既存シーンはそのまま** Pattern 1 でカバー
 - **乱数が問題になったシーンだけ** `_vrt_setup` を追加して Pattern 2 で対処
 
+Pattern 2 は `RandomNumberGenerator` インスタンスや noise など Pattern 1 で対処できない
+ケースが実際に発生してから導入する。現時点では不要。
+
 Pattern 3 は効果が限定的なため、今回は見送る。
+
+---
+
+## 現在の実装状況
+
+| Pattern | 状態 | 備考 |
+| --- | --- | --- |
+| Pattern 1 | **実装済み** | `capture.gd` の `seed(VRT_SEED)` で対応 |
+| Pattern 2 | 未実装（将来の拡張候補） | 問題が発生したシーンに限り導入を検討 |
+| Pattern 3 | 見送り | 効果が限定的 |
 
 ---
 
 ## 進め方
 
-1. `capture.gd` に `seed(12345)` を追加（Pattern 1 の実装）
-2. `_vrt_setup` のフック呼び出しを `capture.gd` に追加（Pattern 2 の基盤）
-3. 乱数を使うサンプルシーンを1つ作成し、固定前後で比較検証
+1. `capture.gd` に `seed(12345)` を追加（Pattern 1 の実装） ← **完了**
+2. 乱数を使うサンプルシーンを作成し、2回実行して同一性を確認 ← **完了**
+3. Pattern 2 は問題が起きたシーンが出た時点で対応する
