@@ -20,6 +20,7 @@ extends SceneTree
 const VIEWPORT_SIZE := Vector2i(1280, 720)
 const SETTLE_FRAMES := 5
 const OUTPUT_DIR := "vr_screenshots"
+const VRT_SEED := 12345
 
 func _initialize() -> void:
 	print("=== Godot Visual Regression Capture ===")
@@ -58,6 +59,9 @@ func _capture_scene(scene_path: String, output_dir: String) -> void:
 	if packed == null:
 		printerr("  FAIL: Could not load scene: ", scene_path)
 		return
+
+	# Pattern 1: グローバル乱数 seed を固定（randf/randi 系を安定化）
+	seed(VRT_SEED)
 
 	var vp := SubViewport.new()
 	vp.size = VIEWPORT_SIZE
