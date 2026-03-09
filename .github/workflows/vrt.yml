@@ -4,10 +4,27 @@ on:
   pull_request:
 
 jobs:
-  upload:
+  capture-and-upload:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install rendering dependencies
+        run: sudo apt-get install -y xvfb libgl1-mesa-dri
+
+      - name: Download latest Godot
+        run: |
+          RELEASE_TAG=$(curl -s "https://api.github.com/repos/godotengine/godot/releases/latest" | jq -r '.tag_name')
+          FILENAME="Godot_v${RELEASE_TAG}_linux.x86_64"
+          echo "Downloading Godot ${RELEASE_TAG}..."
+          wget -q "https://github.com/godotengine/godot/releases/download/${RELEASE_TAG}/${FILENAME}.zip"
+          unzip -q "${FILENAME}.zip"
+          mv "${FILENAME}" godot
+          chmod +x godot
+
+      - name: Capture screenshots
+        run: |
+          xvfb-run ./godot --rendering-driver opengl3 --path "$PWD/tests" --script "$PWD/capture.gd"
 
       - uses: actions/setup-node@v4
         with:
