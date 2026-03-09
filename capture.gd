@@ -15,13 +15,13 @@ extends SceneTree
 ##     --rendering-driver metal \
 ##     --script /path/to/godot/tests/visual_regression/capture.gd
 ##
-## Output (デフォルト):  {project_path}/vr_screenshots/{scene_name}_s{seed}.png
+## Output (デフォルト):  {project_path}/vr_screenshots/{scene_name}.png
 ## Output (stories設定): {project_path}/vr_screenshots/{scene_name}_{story_name}.png
 
 const VIEWPORT_SIZE := Vector2i(1280, 720)
 const SETTLE_FRAMES := 5
 const OUTPUT_DIR := "vr_screenshots"
-const VRT_SEEDS: Array[int] = [12345, 99999, 42]
+const VRT_DEFAULT_SEED: int = 12345
 const STORIES_EXT := ".stories.json"
 
 func _initialize() -> void:
@@ -66,9 +66,8 @@ func _capture_scene(scene_path: String, output_dir: String) -> void:
 	var stories := _load_stories(scene_path)
 
 	if stories.is_empty():
-		# stories 設定なし: デフォルトの VRT_SEEDS を使用
-		for vrt_seed in VRT_SEEDS:
-			await _capture_with_seed(scene_path, packed, output_dir, vrt_seed, "")
+		# stories 設定なし: デフォルトの 1 seed でキャプチャ
+		await _capture_with_seed(scene_path, packed, output_dir, VRT_DEFAULT_SEED, "")
 	else:
 		# stories 設定あり: 設定ファイルの seed・名前を使用
 		print("  Stories config: ", stories.size(), " stories")
@@ -100,7 +99,7 @@ func _capture_with_seed(scene_path: String, packed: PackedScene, output_dir: Str
 		var base_name := scene_path.get_file().get_basename()
 		var file_name: String
 		if story_name.is_empty():
-			file_name = base_name + "_s" + str(vrt_seed) + ".png"
+			file_name = base_name + ".png"
 		else:
 			file_name = base_name + "_" + story_name + ".png"
 		var save_path := output_dir.path_join(file_name)

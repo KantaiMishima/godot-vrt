@@ -160,8 +160,8 @@ stories 設定と Pattern 1/2 の関係:
 | Pattern 2 | 未実装（将来の拡張候補） | 問題が発生したシーンに限り導入を検討 |
 | Pattern 3 | 見送り | 効果が限定的 |
 
-`capture.gd` は `VRT_SEEDS: Array[int] = [12345, 99999, 42]` を持ち、
-シーンごとに全 seed でキャプチャする。出力ファイルは `{scene}_s{seed}.png`。
+`capture.gd` は `VRT_DEFAULT_SEED: int = 12345` を持ち、
+stories 設定がない場合は 1 枚だけキャプチャする。出力ファイルは `{scene}.png`。
 
 シーンの横に `.stories.json` を配置すると、その seed・名前が優先される。
 出力ファイルは `{scene}_{story_name}.png`（詳細: [stories_config.md](stories_config.md)）。

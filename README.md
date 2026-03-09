@@ -41,10 +41,10 @@ xvfb-run godot --rendering-driver opengl3 --script addons/godot-vrt/capture.gd
 
 | 条件 | ファイル名 |
 | --- | --- |
-| stories 設定なし（デフォルト） | `{scene_name}_s{seed}.png` |
+| stories 設定なし（デフォルト） | `{scene_name}.png` |
 | stories 設定あり | `{scene_name}_{story_name}.png` |
 
-デフォルトは seed `12345` / `99999` / `42` の 3 枚を撮影します。
+デフォルトは seed `12345` の 1 枚を撮影します。
 シーンファイルの横に `{scene_name}.stories.json` を置くと、seed・ストーリー名をシーンごとに設定できます（詳細: [docs/stories_config.md](docs/stories_config.md)）。
 
 ---
@@ -81,7 +81,8 @@ xvfb-run godot --rendering-driver opengl3 --script addons/godot-vrt/capture.gd
     │
     ├─ .stories.json があれば読み込み（seed・ストーリー名をシーンごとに設定）
     │
-    └─ PNG 保存 → {project}/vr_screenshots/{scene_name}_{story|seed}.png
+    └─ PNG 保存 → {project}/vr_screenshots/{scene_name}.png
+                                         or {scene_name}_{story_name}.png
 
 【利用者側の責務】
   任意の VRT ツールで比較
