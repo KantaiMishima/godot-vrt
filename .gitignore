@@ -17,3 +17,6 @@ mono_crash.*.json
 
 # node_modules
 node_modules/
+
+# Generated VRT screenshots (created by CI)
+tests/vr_screenshots/

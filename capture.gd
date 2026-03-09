@@ -44,6 +44,7 @@ func _initialize() -> void:
 
 	var output_dir := ProjectSettings.globalize_path("res://" + OUTPUT_DIR)
 	DirAccess.make_dir_recursive_absolute(output_dir)
+	_clear_output_dir(output_dir)
 
 	for scene_path in scenes:
 		await _capture_scene(scene_path, output_dir)
@@ -97,6 +98,24 @@ func _capture_with_seed(scene_path: String, packed: PackedScene, output_dir: Str
 		scene_node.queue_free()
 	vp.queue_free()
 	await process_frame
+
+
+func _clear_output_dir(output_dir: String) -> void:
+	var dir := DirAccess.open(output_dir)
+	if dir == null:
+		return
+	print("Clearing output directory: ", output_dir)
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	while file_name != "":
+		if not dir.current_is_dir() and file_name.ends_with(".png"):
+			var err := dir.remove(file_name)
+			if err == OK:
+				print("  Removed: ", file_name)
+			else:
+				printerr("  WARN: Could not remove: ", file_name, " (err=", err, ")")
+		file_name = dir.get_next()
+	dir.list_dir_end()
 
 
 func _find_all_scenes() -> Array[String]:
