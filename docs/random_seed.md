@@ -132,6 +132,26 @@ Pattern 3 は効果が限定的なため、今回は見送る。
 
 ---
 
+## シーンごとの seed カスタマイズ（stories 設定）
+
+シーンファイルの横に `.stories.json` を置くと、そのシーン専用の seed・ストーリー名を設定できます。
+seed の選択は `capture.gd` が stories 設定を優先し、デフォルトの `VRT_SEEDS` は使われません。
+
+```text
+res://ui/
+├── title.tscn
+└── title.stories.json   ← このシーン専用の seed 定義
+```
+
+stories 設定と Pattern 1/2 の関係:
+
+- stories 設定の各 `seed` が Pattern 1 の seed として使われる
+- Pattern 2 の `_vrt_setup(seed)` にも同じ seed が渡される（Pattern 2 実装時）
+
+詳細は [stories_config.md](stories_config.md) を参照。
+
+---
+
 ## 現在の実装状況
 
 | Pattern | 状態 | 備考 |
@@ -142,6 +162,9 @@ Pattern 3 は効果が限定的なため、今回は見送る。
 
 `capture.gd` は `VRT_SEEDS: Array[int] = [12345, 99999, 42]` を持ち、
 シーンごとに全 seed でキャプチャする。出力ファイルは `{scene}_s{seed}.png`。
+
+シーンの横に `.stories.json` を配置すると、その seed・名前が優先される。
+出力ファイルは `{scene}_{story_name}.png`（詳細: [stories_config.md](stories_config.md)）。
 
 ---
 

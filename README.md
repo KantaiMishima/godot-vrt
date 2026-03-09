@@ -37,7 +37,15 @@ GODOT_MTL_OFF_SCREEN=1 godot --headless --rendering-driver metal --script addons
 xvfb-run godot --rendering-driver opengl3 --script addons/godot-vrt/capture.gd
 ```
 
-キャプチャ画像は `{project}/vr_screenshots/{scene_name}.png` に保存されます（`vr` = visual regression）。
+キャプチャ画像は `{project}/vr_screenshots/` に保存されます（`vr` = visual regression）。
+
+| 条件 | ファイル名 |
+| --- | --- |
+| stories 設定なし（デフォルト） | `{scene_name}_s{seed}.png` |
+| stories 設定あり | `{scene_name}_{story_name}.png` |
+
+デフォルトは seed `12345` / `99999` / `42` の 3 枚を撮影します。
+シーンファイルの横に `{scene_name}.stories.json` を置くと、seed・ストーリー名をシーンごとに設定できます（詳細: [docs/stories_config.md](docs/stories_config.md)）。
 
 ---
 
@@ -71,7 +79,9 @@ xvfb-run godot --rendering-driver opengl3 --script addons/godot-vrt/capture.gd
     ├─ SubViewport::get_image() でキャプチャ
     │    └─ ビューポートサイズ固定（1280×720）
     │
-    └─ PNG 保存 → {project}/vr_screenshots/{scene_name}.png
+    ├─ .stories.json があれば読み込み（seed・ストーリー名をシーンごとに設定）
+    │
+    └─ PNG 保存 → {project}/vr_screenshots/{scene_name}_{story|seed}.png
 
 【利用者側の責務】
   任意の VRT ツールで比較
@@ -80,6 +90,15 @@ xvfb-run godot --rendering-driver opengl3 --script addons/godot-vrt/capture.gd
     ├─ pixelmatch（自前スクリプト）
     └─ その他
 ```
+
+---
+
+## ドキュメント
+
+| ドキュメント | 内容 |
+| --- | --- |
+| [docs/stories_config.md](docs/stories_config.md) | Stories 設定ファイルのフォーマットと使い方 |
+| [docs/random_seed.md](docs/random_seed.md) | 乱数固定化の設計と各パターンの解説 |
 
 ---
 
