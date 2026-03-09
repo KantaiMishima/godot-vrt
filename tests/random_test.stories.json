@@ -1,0 +1,7 @@
+{
+  "stories": [
+    { "name": "default",     "seed": 12345 },
+    { "name": "alternative", "seed": 99999 },
+    { "name": "minimal",     "seed": 42    }
+  ]
+}

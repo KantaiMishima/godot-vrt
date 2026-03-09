@@ -15,12 +15,14 @@ extends SceneTree
 ##     --rendering-driver metal \
 ##     --script /path/to/godot/tests/visual_regression/capture.gd
 ##
-## Output: {project_path}/vr_screenshots/{scene_name}_s{seed}.png
+## Output (デフォルト):  {project_path}/vr_screenshots/{scene_name}.png
+## Output (stories設定): {project_path}/vr_screenshots/{scene_name}_{story_name}.png
 
 const VIEWPORT_SIZE := Vector2i(1280, 720)
 const SETTLE_FRAMES := 5
 const OUTPUT_DIR := "vr_screenshots"
-const VRT_SEEDS: Array[int] = [12345, 99999, 42]
+const VRT_DEFAULT_SEED: int = 12345
+const STORIES_EXT := ".stories.json"
 
 func _initialize() -> void:
 	print("=== Godot Visual Regression Capture ===")
@@ -61,11 +63,19 @@ func _capture_scene(scene_path: String, output_dir: String) -> void:
 		printerr("  FAIL: Could not load scene: ", scene_path)
 		return
 
-	for vrt_seed in VRT_SEEDS:
-		await _capture_with_seed(scene_path, packed, output_dir, vrt_seed)
+	var stories := _load_stories(scene_path)
+
+	if stories.is_empty():
+		# stories 設定なし: デフォルトの 1 seed でキャプチャ
+		await _capture_with_seed(scene_path, packed, output_dir, VRT_DEFAULT_SEED, "")
+	else:
+		# stories 設定あり: 設定ファイルの seed・名前を使用
+		print("  Stories config: ", stories.size(), " stories")
+		for story in stories:
+			await _capture_with_seed(scene_path, packed, output_dir, story["seed"], story["name"])
 
 
-func _capture_with_seed(scene_path: String, packed: PackedScene, output_dir: String, vrt_seed: int) -> void:
+func _capture_with_seed(scene_path: String, packed: PackedScene, output_dir: String, vrt_seed: int, story_name: String) -> void:
 	# Pattern 1: グローバル乱数 seed を固定（randf/randi 系を安定化）
 	seed(vrt_seed)
 
@@ -86,7 +96,12 @@ func _capture_with_seed(scene_path: String, packed: PackedScene, output_dir: Str
 	if img == null or img.is_empty():
 		printerr("  FAIL: image is null or empty (seed=", vrt_seed, ")")
 	else:
-		var file_name := scene_path.get_file().get_basename() + "_s" + str(vrt_seed) + ".png"
+		var base_name := scene_path.get_file().get_basename()
+		var file_name: String
+		if story_name.is_empty():
+			file_name = base_name + ".png"
+		else:
+			file_name = base_name + "_" + story_name + ".png"
 		var save_path := output_dir.path_join(file_name)
 		var err := img.save_png(save_path)
 		if err == OK:
@@ -116,6 +131,53 @@ func _clear_output_dir(output_dir: String) -> void:
 				printerr("  WARN: Could not remove: ", file_name, " (err=", err, ")")
 		file_name = dir.get_next()
 	dir.list_dir_end()
+
+
+## シーンファイルの横にある .stories.json を読み込む。
+## 存在しない場合は空配列を返す。
+## 返り値の各要素: { "name": String, "seed": int }
+func _load_stories(scene_path: String) -> Array[Dictionary]:
+	var config_path := scene_path.get_basename() + STORIES_EXT
+	if not FileAccess.file_exists(config_path):
+		return []
+
+	var file := FileAccess.open(config_path, FileAccess.READ)
+	if file == null:
+		printerr("  WARN: Could not open stories config: ", config_path)
+		return []
+
+	var text := file.get_as_text()
+	file.close()
+
+	var json := JSON.new()
+	var err := json.parse(text)
+	if err != OK:
+		printerr("  WARN: Invalid JSON in stories config (line ", json.get_error_line(), "): ", config_path)
+		return []
+
+	var data: Variant = json.data
+	if not data is Dictionary or not data.has("stories"):
+		printerr("  WARN: stories config must have a 'stories' array: ", config_path)
+		return []
+
+	var stories_raw: Variant = data["stories"]
+	if not stories_raw is Array:
+		printerr("  WARN: 'stories' must be an array: ", config_path)
+		return []
+
+	var stories: Array[Dictionary] = []
+	for entry: Variant in stories_raw:
+		if not entry is Dictionary:
+			printerr("  WARN: Each story must be an object, skipping entry")
+			continue
+		if not entry.has("name") or not entry.has("seed"):
+			printerr("  WARN: Each story must have 'name' and 'seed', skipping entry")
+			continue
+		var story_name: String = str(entry["name"])
+		var story_seed: int = int(entry["seed"])
+		stories.append({"name": story_name, "seed": story_seed})
+
+	return stories
 
 
 func _find_all_scenes() -> Array[String]:
