@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://random_dots_test.gd" id="1"]
+
+[node name="RandomDotsTest" type="Control"]
+script = ExtResource("1")
