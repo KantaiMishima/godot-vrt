@@ -33,8 +33,8 @@ git clone https://github.com/KantaiMishima/godot-vrt.git addons/godot-vrt
 # macOS (Metal オフスクリーン)
 GODOT_MTL_OFF_SCREEN=1 godot --headless --rendering-driver metal --script addons/godot-vrt/capture.gd
 
-# Linux CI (Xvfb 経由)
-xvfb-run godot --headless --rendering-driver vulkan --script addons/godot-vrt/capture.gd
+# Linux CI (Xvfb + OpenGL3 ソフトウェアレンダリング)
+xvfb-run godot --rendering-driver opengl3 --script addons/godot-vrt/capture.gd
 ```
 
 キャプチャ画像は `{project}/vr_screenshots/{scene_name}.png` に保存されます（`vr` = visual regression）。
@@ -64,7 +64,7 @@ xvfb-run godot --headless --rendering-driver vulkan --script addons/godot-vrt/ca
     │
     ├─ Godot 起動（実レンダラ付きオフスクリーン）
     │    └─ GODOT_MTL_OFF_SCREEN=1 --rendering-driver metal  (macOS)
-    │    └─ xvfb-run --rendering-driver vulkan               (Linux CI)
+    │    └─ xvfb-run --rendering-driver opengl3              (Linux CI)
     │
     ├─ シーンロード → N フレーム待機（レイアウト安定化）
     │

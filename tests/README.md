@@ -21,12 +21,26 @@ tests/
 
 ## 実行方法
 
+**macOS:**
+
 ```bash
 GODOT_MTL_OFF_SCREEN=1 /Applications/Godot.app/Contents/MacOS/Godot \
   --path misc/visual_regression/godot-vrt/tests \
   --rendering-driver metal \
   --script /path/to/capture.gd \
   -- res://random_test.tscn
+```
+
+**Linux (Xvfb + OpenGL3 ソフトウェアレンダリング):**
+
+```bash
+# 依存パッケージ（未インストールの場合）
+sudo apt-get install -y xvfb libgl1-mesa-dri
+
+xvfb-run godot \
+  --path /path/to/godot-vrt/tests \
+  --rendering-driver opengl3 \
+  --script /path/to/capture.gd
 ```
 
 出力: `tests/vr_screenshots/random_test_s12345.png`, `random_test_s99999.png`, `random_test_s42.png`
