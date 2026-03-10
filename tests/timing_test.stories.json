@@ -1,0 +1,33 @@
+{
+  "stories": [
+    {
+      "name": "delay_t0",
+      "seed": 0,
+      "comment": "SETTLE_FRAMES 直後に撮影（バーは左端付近）"
+    },
+    {
+      "name": "delay_t500",
+      "seed": 0,
+      "delay_ms": 500,
+      "comment": "500ms 待機後に撮影（バーは約 25% 地点）"
+    },
+    {
+      "name": "delay_t1000",
+      "seed": 0,
+      "delay_ms": 1000,
+      "comment": "1000ms 待機後に撮影（バーは約 50% 地点）"
+    },
+    {
+      "name": "delay_t2000",
+      "seed": 0,
+      "delay_ms": 2000,
+      "comment": "2000ms 待機後に撮影（バーは右端）"
+    },
+    {
+      "name": "multi",
+      "seed": 0,
+      "script": "res://timing_test_capture.vrt.gd",
+      "comment": "外部スクリプトで 1 シーンから 3 枚撮影（100ms・500ms・2000ms）"
+    }
+  ]
+}
