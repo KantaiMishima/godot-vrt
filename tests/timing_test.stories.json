@@ -1,12 +1,12 @@
 {
   "stories": [
     {
-      "name": "delay_t0",
+      "name": "delay_t0000",
       "seed": 0,
       "comment": "SETTLE_FRAMES 直後に撮影（バーは左端付近）"
     },
     {
-      "name": "delay_t500",
+      "name": "delay_t0500",
       "seed": 0,
       "delay_ms": 500,
       "comment": "500ms 待機後に撮影（バーは約 25% 地点）"

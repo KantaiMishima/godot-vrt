@@ -33,9 +33,9 @@ const STORIES_EXT := ".stories.json"
 ##   extends RefCounted
 ##   func run(scene_node: Node, session: Object) -> void:
 ##       await session.wait_ms(100)
-##       await session.take_screenshot("100ms")
+##       await session.take_screenshot("0100ms")
 ##       await session.wait_ms(400)
-##       await session.take_screenshot("500ms")
+##       await session.take_screenshot("0500ms")
 class VRTSession:
 	var _tree: SceneTree
 	var _vp: SubViewport
