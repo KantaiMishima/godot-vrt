@@ -93,10 +93,10 @@ vr_screenshots/
 
 | 出力ファイル | 説明 |
 | --- | --- |
-| `button_test_interaction_initial.png` | 初期状態（Count: 0） |
-| `button_test_interaction_after_click1.png` | Count Up を 1 回押した後（Count: 1） |
-| `button_test_interaction_after_click3.png` | Count Up を計 3 回押した後（Count: 3） |
-| `button_test_interaction_after_reset.png` | Reset を押した後（Count: 0） |
+| `button_test_interaction_01_initial.png` | 初期状態（Count: 0） |
+| `button_test_interaction_02_after_click1.png` | Count Up を 1 回押した後（Count: 1） |
+| `button_test_interaction_03_after_click3.png` | Count Up を計 3 回押した後（Count: 3） |
+| `button_test_interaction_04_after_reset.png` | Reset を押した後（Count: 0） |
 
 ## クリック操作テストシーン（click_test）
 
@@ -105,10 +105,10 @@ vr_screenshots/
 
 | 出力ファイル | 説明 |
 | --- | --- |
-| `click_test_interaction_initial.png` | 初期状態（全カード未選択） |
-| `click_test_interaction_card0_selected.png` | カード 0 を選択 |
-| `click_test_interaction_multi_selected.png` | カード 0・3・5 を選択 |
-| `click_test_interaction_card0_deselected.png` | カード 0 を再クリックして解除 |
+| `click_test_interaction_01_initial.png` | 初期状態（全カード未選択） |
+| `click_test_interaction_02_card0_selected.png` | カード 0 を選択 |
+| `click_test_interaction_03_multi_selected.png` | カード 0・3・5 を選択 |
+| `click_test_interaction_04_card0_deselected.png` | カード 0 を再クリックして解除 |
 
 ## コマンド入力テストシーン（command_test）
 
@@ -118,9 +118,9 @@ vr_screenshots/
 
 | 出力ファイル | 説明 |
 | --- | --- |
-| `command_test_interaction_initial.png` | 初期状態（入力なし） |
-| `command_test_interaction_wrong_command.png` | 不正解コマンド（`"HELLO"`）入力後 |
-| `command_test_interaction_success_effect.png` | 正解コマンド（`"GODOT"`）入力後（演出表示） |
+| `command_test_interaction_01_initial.png` | 初期状態（入力なし） |
+| `command_test_interaction_02_wrong_command.png` | 不正解コマンド（`"HELLO"`）入力後 |
+| `command_test_interaction_03_success_effect.png` | 正解コマンド（`"GODOT"`）入力後（演出表示） |
 
 ## 実行方法
 

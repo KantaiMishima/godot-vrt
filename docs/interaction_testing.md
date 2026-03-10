@@ -57,20 +57,20 @@ extends RefCounted
 
 func run(scene_node: Node, session: Object) -> void:
     # 初期状態
-    await session.take_screenshot("initial")
+    await session.take_screenshot("01_initial")
 
     # ボタンを押す
     scene_node.click_button(0)
-    await session.take_screenshot("after_click1")
+    await session.take_screenshot("02_after_click1")
 
     # さらに押す
     scene_node.click_button(0)
     scene_node.click_button(0)
-    await session.take_screenshot("after_click3")
+    await session.take_screenshot("03_after_click3")
 
     # リセットボタンを押す
     scene_node.click_button(1)
-    await session.take_screenshot("after_reset")
+    await session.take_screenshot("04_after_reset")
 ```
 
 ### `.stories.json` の設定
@@ -91,10 +91,10 @@ func run(scene_node: Node, session: Object) -> void:
 
 ```text
 vr_screenshots/
-├── button_test_interaction_initial.png      ← 初期状態（Count: 0）
-├── button_test_interaction_after_click1.png ← 1 回押した後（Count: 1）
-├── button_test_interaction_after_click3.png ← 3 回押した後（Count: 3）
-└── button_test_interaction_after_reset.png  ← リセット後（Count: 0）
+├── button_test_interaction_01_initial.png      ← 初期状態（Count: 0）
+├── button_test_interaction_02_after_click1.png ← 1 回押した後（Count: 1）
+├── button_test_interaction_03_after_click3.png ← 3 回押した後（Count: 3）
+└── button_test_interaction_04_after_reset.png  ← リセット後（Count: 0）
 ```
 
 サンプル実装: [`tests/button_test.gd`](../tests/button_test.gd) /
@@ -131,30 +131,30 @@ extends RefCounted
 
 func run(scene_node: Node, session: Object) -> void:
     # 初期状態（全未選択）
-    await session.take_screenshot("initial")
+    await session.take_screenshot("01_initial")
 
     # 1 枚選択
     scene_node.select_card(0)
-    await session.take_screenshot("card0_selected")
+    await session.take_screenshot("02_card0_selected")
 
     # 複数選択
     scene_node.select_card(3)
     scene_node.select_card(5)
-    await session.take_screenshot("multi_selected")
+    await session.take_screenshot("03_multi_selected")
 
     # 再クリックで選択解除
     scene_node.select_card(0)
-    await session.take_screenshot("card0_deselected")
+    await session.take_screenshot("04_card0_deselected")
 ```
 
 ### 出力ファイル
 
 ```text
 vr_screenshots/
-├── click_test_interaction_initial.png         ← 全カード未選択
-├── click_test_interaction_card0_selected.png  ← カード 0 のみ選択
-├── click_test_interaction_multi_selected.png  ← カード 0・3・5 を選択
-└── click_test_interaction_card0_deselected.png ← カード 0 を解除（3・5 のみ）
+├── click_test_interaction_01_initial.png          ← 全カード未選択
+├── click_test_interaction_02_card0_selected.png   ← カード 0 のみ選択
+├── click_test_interaction_03_multi_selected.png   ← カード 0・3・5 を選択
+└── click_test_interaction_04_card0_deselected.png ← カード 0 を解除（3・5 のみ）
 ```
 
 サンプル実装: [`tests/click_test.gd`](../tests/click_test.gd) /
@@ -233,24 +233,24 @@ extends RefCounted
 
 func run(scene_node: Node, session: Object) -> void:
     # 初期状態
-    await session.take_screenshot("initial")
+    await session.take_screenshot("01_initial")
 
     # 不正解コマンド → エラー表示・演出なし
     scene_node.input_command("HELLO")
-    await session.take_screenshot("wrong_command")
+    await session.take_screenshot("02_wrong_command")
 
     # 正解コマンド → 成功演出（虹色ボーダー）が表示される
     scene_node.input_command("GODOT")
-    await session.take_screenshot("success_effect")
+    await session.take_screenshot("03_success_effect")
 ```
 
 ### 出力ファイル
 
 ```text
 vr_screenshots/
-├── command_test_interaction_initial.png       ← 入力前の初期状態
-├── command_test_interaction_wrong_command.png ← 不正解入力後
-└── command_test_interaction_success_effect.png ← 正解入力後（演出表示）
+├── command_test_interaction_01_initial.png        ← 入力前の初期状態
+├── command_test_interaction_02_wrong_command.png  ← 不正解入力後
+└── command_test_interaction_03_success_effect.png ← 正解入力後（演出表示）
 ```
 
 サンプル実装: [`tests/command_test.gd`](../tests/command_test.gd) /
