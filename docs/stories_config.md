@@ -35,26 +35,23 @@ res://
 
 各要素のフィールド:
 
-| フィールド | 型 | 説明 |
-| --- | --- | --- |
-| `name` | string | スクリーンショットの識別名。出力ファイル名に使われる |
-| `seed` | number (int) | グローバル乱数 seed。`seed(n)` に渡す整数 |
+| フィールド | 型 | 必須 | 説明 |
+| --- | --- | --- | --- |
+| `name` | string | ✓ | スクリーンショットの識別名。出力ファイル名に使われる |
+| `seed` | number (int) | ✓ | グローバル乱数 seed。`seed(n)` に渡す整数 |
+| `delay_ms` | number (int) | - | SETTLE_FRAMES 後、撮影までの追加待機時間（ミリ秒）。省略時は 0 |
+| `script` | string | - | 撮影を委任する外部 GDScript のパス（`res://` 形式）。省略時は通常キャプチャ |
 
 ---
 
 ## 出力ファイル名
 
-stories 設定を使う場合、出力ファイル名は以下の形式になります。
-
-```text
-{scene_name}_{story_name}.png
-```
-
-設定なし（デフォルト）の場合は次の形式です。
-
-```text
-{scene_name}.png
-```
+| 設定 | 出力形式 |
+| --- | --- |
+| stories 設定なし | `{scene_name}.png` |
+| stories 設定あり | `{scene_name}_{story_name}.png` |
+| `script` 使用・suffix あり | `{scene_name}_{story_name}_{suffix}.png` |
+| `script` 使用・suffix なし | `{scene_name}_{story_name}.png` |
 
 ---
 
@@ -81,6 +78,86 @@ vr_screenshots/
 └── title_minimal.png
 ```
 
+### delay_ms: アニメーション途中を記録する
+
+同じ seed でシーンを繰り返しロードし、異なる待機時間で撮影します。
+アニメーションが自動再生されるシーンの途中経過を記録するのに適しています。
+
+```json
+{
+  "stories": [
+    { "name": "t0",    "seed": 12345 },
+    { "name": "t100",  "seed": 12345, "delay_ms": 100 },
+    { "name": "t500",  "seed": 12345, "delay_ms": 500 },
+    { "name": "t2000", "seed": 12345, "delay_ms": 2000 }
+  ]
+}
+```
+
+出力:
+
+```text
+vr_screenshots/
+├── title_t0.png
+├── title_t100.png
+├── title_t500.png
+└── title_t2000.png
+```
+
+### script: 外部スクリプトで複数枚撮影する
+
+1 ストーリーから複数のスクリーンショットを撮りたい場合や、
+シーンへの操作（ボタン押下・状態変化など）を挟みたい場合に使います。
+
+```json
+{
+  "stories": [
+    {
+      "name": "animation",
+      "seed": 12345,
+      "script": "res://tests/animation_capture.vrt.gd"
+    }
+  ]
+}
+```
+
+外部スクリプト（`animation_capture.vrt.gd`）の例:
+
+```gdscript
+extends RefCounted
+
+func run(scene_node: Node, session: Object) -> void:
+    # 100ms 後にスクリーンショット
+    await session.wait_ms(100)
+    await session.take_screenshot("100ms")
+
+    # 合計 500ms
+    await session.wait_ms(400)
+    await session.take_screenshot("500ms")
+
+    # 合計 2000ms
+    await session.wait_ms(1500)
+    await session.take_screenshot("2000ms")
+```
+
+出力:
+
+```text
+vr_screenshots/
+├── title_animation_100ms.png
+├── title_animation_500ms.png
+└── title_animation_2000ms.png
+```
+
+#### VRTSession API
+
+外部スクリプトの `run(scene_node, session)` に渡される `session` オブジェクトのメソッド:
+
+| メソッド | 説明 |
+| --- | --- |
+| `await session.wait_ms(ms: float)` | 指定ミリ秒待機する |
+| `await session.take_screenshot(suffix: String = "")` | スクリーンショットを保存する。suffix を省略すると `{story_name}.png` |
+
 ### UI テーマのバリエーション
 
 ```json
@@ -106,11 +183,21 @@ vr_screenshots/
 
 ---
 
+## delay_ms と script の使い分け
+
+| 用途 | 推奨方法 |
+| --- | --- |
+| アニメーション途中の状態を複数タイミングで記録したい | `delay_ms`（シーンを毎回ロードし直す） |
+| 1 回のロードで複数枚撮りたい・操作を挟みたい | `script` |
+| `delay_ms` と `script` を同時指定した場合 | `script` が優先される |
+
+---
+
 ## デフォルト挙動との使い分け
 
 | 状況 | 推奨 |
 | --- | --- |
-| 乱数を使わないシーン | 設定ファイル不要（デフォルトの 3 種 seed でキャプチャ） |
+| 乱数を使わないシーン | 設定ファイル不要（デフォルトの 1 seed でキャプチャ） |
 | 乱数を使うが特定バリエーションを見たい | stories 設定でバリエーションを定義 |
 | seed ではなくシーン名でスクリーンショットを管理したい | stories 設定の `name` で意味のある名前を付ける |
 
