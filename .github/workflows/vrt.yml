@@ -27,7 +27,7 @@ jobs:
 
       - name: Capture screenshots
         run: |
-          xvfb-run ./godot --rendering-driver opengl3 --path "$PWD/tests" --script "$PWD/capture.gd"
+          xvfb-run ./godot --rendering-driver opengl3 --fixed-fps 60 --path "$PWD/tests" --script "$PWD/capture.gd"
 
       - uses: actions/setup-node@v4
         with:

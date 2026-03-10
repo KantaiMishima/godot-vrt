@@ -76,6 +76,7 @@ vr_screenshots/
 GODOT_MTL_OFF_SCREEN=1 /Applications/Godot.app/Contents/MacOS/Godot \
   --path misc/visual_regression/godot-vrt/tests \
   --rendering-driver metal \
+  --fixed-fps 60 \
   --script /path/to/capture.gd \
   -- res://random_test.tscn
 ```
@@ -89,6 +90,7 @@ sudo apt-get install -y xvfb libgl1-mesa-dri
 xvfb-run godot \
   --path /path/to/godot-vrt/tests \
   --rendering-driver opengl3 \
+  --fixed-fps 60 \
   --script /path/to/capture.gd
 ```
 
@@ -98,6 +100,7 @@ xvfb-run godot \
 xvfb-run godot \
   --path /path/to/godot-vrt/tests \
   --rendering-driver opengl3 \
+  --fixed-fps 60 \
   --script /path/to/capture.gd \
   -- res://timing_test.tscn
 ```
