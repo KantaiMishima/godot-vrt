@@ -1,144 +1,145 @@
 # godot-vrt
 
-Godot アドオン — **visual regression test** の仕組みを Godot エンジンに追加します。
+A Godot addon that brings **visual regression testing** to the Godot engine.
 
-シーンのスクリーンショットをキャプチャし、基準画像と比較することで、意図しない見た目の変化を検出します。
+Captures screenshots of scenes and compares them against baseline images to detect unintended visual changes.
 
----
-
-## 概要
-
-`godot-vrt` は Godot エンジン向けのアドオンです。
-
-- シーン（`.tscn`）のスクリーンショットを自動でキャプチャする
-- キャプチャした画像を基準画像と比較することで、意図しない UI/レイアウトの変化を検出できる（**visual regression test**）
-- CI 環境（Linux/macOS）での実行に対応
-
-> **比較・差分管理** は利用者側に委ねており、Argos CI / reg-suit / pixelmatch などの任意のツールと組み合わせて使います。
+> **日本語版:** [README.ja.md](README.ja.md)
 
 ---
 
-## テスティングトロフィーにおける位置づけ
+## Overview
 
-godot-vrt は**テスティングトロフィー**（Kent C. Dodds が提唱）の
-**インテグレーションテスト**層に相当します。
+`godot-vrt` is an addon for the Godot engine.
+
+- Automatically captures screenshots of scenes (`.tscn`)
+- Detects unintended UI/layout changes by comparing captured images against baselines (**visual regression testing**)
+- Supports execution in CI environments (Linux/macOS)
+
+> **Comparison and diff management** are left to the user — combine with any VRT tool such as Argos CI, reg-suit, or pixelmatch.
+
+---
+
+## Position in the Testing Trophy
+
+godot-vrt sits at the **integration test** layer of the **Testing Trophy** (coined by Kent C. Dodds).
 
 ```text
            /\
-          /E2\          E2E テスト（実機・実プレイヤー操作）
+          /E2\          E2E tests (real device, real player input)
          /----\
         /      \
-       / Integr \  ← ★ godot-vrt はここ
-      / -ation   \      実際のシーンを実レンダラで描画して視覚的な出力を比較する
-     /____________\     （カップ部分 = テスト戦略の中で最も比重が大きい層）
+       / Integr \  ← ★ godot-vrt is here
+      / -ation   \      renders actual scenes with a real renderer and compares visual output
+     /____________\     (the cup = the layer with the most weight in the testing strategy)
          |    |
-         |Unit|         ユニットテスト（ロジック単体）← 茎（比重小）
+         |Unit|         Unit tests (logic in isolation) ← stem (less weight)
          |____|
      ____________
-    |   Static   |      静的解析（型チェック・lint）← 台座
+    |   Static   |      Static analysis (type checks, lint) ← base
     |____________|
 ```
 
-この位置づけから、以下のことがわかります:
-
-| 検出したい問題 | 適切な層 | Godot での手段例 |
+| Problem to detect | Appropriate layer | Example tools in Godot |
 | --- | --- | --- |
-| 型エラー・未定義変数 | 静的解析 | `godot --check-only`・gdlint |
-| スコア計算・当たり判定のロジックバグ | ユニットテスト | GUT (Godot Unit Test) |
-| 実際のプレイヤー入力で正しく動くか | E2E テスト | 実機 + 入力マクロ |
-| UI の見た目が意図せず変わっていないか | **インテグレーション（VRT）** | godot-vrt |
+| Type errors, undefined variables | Static analysis | `godot --check-only`, gdlint |
+| Logic bugs in scoring or collision | Unit tests | GUT (Godot Unit Test) |
+| Correct behavior with real player input | E2E tests | Real device + input macros |
+| Unintended UI visual changes | **Integration (VRT)** | godot-vrt |
 
-> **godot-vrt を入れれば全部 OK ではありません。**
-> 静的解析・ユニットテスト・E2E テストと組み合わせることがベストプラクティスです。
+> **godot-vrt alone is not enough.**
+> Combine it with static analysis, unit tests, and E2E tests for best results.
 
 ---
 
-## インストール
+## Installation
 
 ```bash
-# プロジェクトの addons/ 配下にクローン
+# Clone into your project's addons/ directory
 git clone https://github.com/KantaiMishima/godot-vrt.git addons/godot-vrt
 ```
 
 ---
 
-## 使い方
+## Usage
 
 ```bash
-# macOS (Metal オフスクリーン)
+# macOS (Metal offscreen)
 GODOT_MTL_OFF_SCREEN=1 godot --headless --rendering-driver metal --script addons/godot-vrt/capture.gd
 
-# Linux CI (Xvfb + OpenGL3 ソフトウェアレンダリング)
+# Linux CI (Xvfb + OpenGL3 software rendering)
 xvfb-run godot --rendering-driver opengl3 --script addons/godot-vrt/capture.gd
 ```
 
-キャプチャ画像は `{project}/vr_screenshots/` に保存されます（`vr` = visual regression）。
+Captured images are saved to `{project}/vr_screenshots/` (`vr` = visual regression).
 
-| 条件 | ファイル名 |
+| Condition | Filename |
 | --- | --- |
-| stories 設定なし（デフォルト） | `{scene_name}.png` |
-| stories 設定あり | `{scene_name}_{story_name}.png` |
+| No stories config (default) | `{scene_name}.png` |
+| With stories config | `{scene_name}_{story_name}.png` |
 
-デフォルトは seed `12345` の 1 枚を撮影します。
-シーンファイルの横に `{scene_name}.stories.json` を置くと、seed・ストーリー名をシーンごとに設定できます（詳細: [docs/stories_config.md](docs/stories_config.md)）。
-
----
-
-## 現状の方針
-
-### 責務の分離
-
-| 責務                           | 担当                                    |
-| ------------------------------ | --------------------------------------- |
-| シーンのスクリーンショット撮影 | **このリポジトリ**（`capture.gd`）      |
-| 基準画像との差分比較・管理     | **利用者側**（任意の VRT ツール）       |
-
-**配布形態:** 独立した addon リポジトリとして配布。ユーザーは `addons/` 配下にクローンして使います。
+By default, one screenshot is taken with seed `12345`.
+Placing a `{scene_name}.stories.json` next to the scene file lets you configure the seed and story name per scene (see [docs/en/stories_config.md](docs/en/stories_config.md)).
 
 ---
 
-## アーキテクチャ
+## Design
+
+### Separation of Concerns
+
+| Responsibility | Owner |
+| --- | --- |
+| Scene screenshot capture | **This repository** (`capture.gd`) |
+| Diff comparison and baseline management | **User** (any VRT tool) |
+
+**Distribution:** Distributed as a standalone addon repository. Users clone it under `addons/`.
+
+---
+
+## Architecture
 
 ```text
-【このリポジトリの責務】
+[This repository's responsibility]
   capture.gd
     │
-    ├─ シーン列挙（.tscn を再帰探索 or 引数指定）
+    ├─ Enumerate scenes (recursive .tscn search or argument-specified)
     │
-    ├─ Godot 起動（実レンダラ付きオフスクリーン）
+    ├─ Launch Godot (offscreen with real renderer)
     │    └─ GODOT_MTL_OFF_SCREEN=1 --rendering-driver metal  (macOS)
     │    └─ xvfb-run --rendering-driver opengl3              (Linux CI)
     │
-    ├─ シーンロード → N フレーム待機（レイアウト安定化）
+    ├─ Load scene → wait N frames (layout stabilization)
     │
-    ├─ SubViewport::get_image() でキャプチャ
-    │    └─ ビューポートサイズ固定（1280×720）
+    ├─ Capture via SubViewport::get_image()
+    │    └─ Fixed viewport size (1280×720)
     │
-    ├─ .stories.json があれば読み込み（seed・ストーリー名をシーンごとに設定）
+    ├─ Load .stories.json if present (per-scene seed and story name)
     │
-    └─ PNG 保存 → {project}/vr_screenshots/{scene_name}.png
-                                         or {scene_name}_{story_name}.png
+    └─ Save PNG → {project}/vr_screenshots/{scene_name}.png
+                                          or {scene_name}_{story_name}.png
 
-【利用者側の責務】
-  任意の VRT ツールで比較
-    ├─ Argos CI（OSS 無料枠あり・PR コメント自動投稿）
-    ├─ reg-suit（S3/GCS に保管）
-    ├─ pixelmatch（自前スクリプト）
-    └─ その他
+[User's responsibility]
+  Compare with any VRT tool
+    ├─ Argos CI (OSS free tier, auto PR comments)
+    ├─ reg-suit (stores on S3/GCS)
+    ├─ pixelmatch (custom script)
+    └─ others
 ```
 
 ---
 
-## ドキュメント
+## Documentation
 
-| ドキュメント | 内容 |
+| Document | Description |
 | --- | --- |
-| [docs/stories_config.md](docs/stories_config.md) | Stories 設定ファイルのフォーマットと使い方 |
-| [docs/random_seed.md](docs/random_seed.md) | 乱数固定化の設計と各パターンの解説 |
-| [docs/interaction_testing.md](docs/interaction_testing.md) | インタラクション操作テストのパターンと実装例 |
+| [docs/en/stories_config.md](docs/en/stories_config.md) | Stories configuration file format and usage |
+| [docs/en/random_seed.md](docs/en/random_seed.md) | Random seed design and pattern breakdown |
+| [docs/en/interaction_testing.md](docs/en/interaction_testing.md) | Interaction testing patterns and implementation examples |
+
+**Japanese documentation:** [docs/ja/](docs/ja/)
 
 ---
 
-## ライセンス
+## License
 
-[LICENSE](LICENSE) を参照してください。
+See [LICENSE](LICENSE).

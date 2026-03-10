@@ -1,7 +1,7 @@
 # インタラクション操作のテスト
 
 > godot-vrt がテスト戦略全体でどこに位置するかは
-> [README.md — テスティングトロフィーにおける位置づけ](../README.md#テスティングトロフィーにおける位置づけ) を参照してください。
+> [README.ja.md — テスティングトロフィーにおける位置づけ](../../README.ja.md#テスティングトロフィーにおける位置づけ) を参照してください。
 
 ---
 
@@ -97,8 +97,8 @@ vr_screenshots/
 └── button_test_interaction_04_after_reset.png  ← リセット後（Count: 0）
 ```
 
-サンプル実装: [`tests/button_test.gd`](../tests/button_test.gd) /
-[`tests/button_test_capture.vrt.gd`](../tests/button_test_capture.vrt.gd)
+サンプル実装: [`tests/button_test.gd`](../../tests/button_test.gd) /
+[`tests/button_test_capture.vrt.gd`](../../tests/button_test_capture.vrt.gd)
 
 ---
 
@@ -157,8 +157,8 @@ vr_screenshots/
 └── click_test_interaction_04_card0_deselected.png ← カード 0 を解除（3・5 のみ）
 ```
 
-サンプル実装: [`tests/click_test.gd`](../tests/click_test.gd) /
-[`tests/click_test_capture.vrt.gd`](../tests/click_test_capture.vrt.gd)
+サンプル実装: [`tests/click_test.gd`](../../tests/click_test.gd) /
+[`tests/click_test_capture.vrt.gd`](../../tests/click_test_capture.vrt.gd)
 
 ---
 
@@ -194,8 +194,8 @@ func run(scene_node: Node, session: Object) -> void:
 
 詳細は `delay_ms` と `script` の使い分けを参照してください（[stories_config.md](stories_config.md)）。
 
-サンプル実装: [`tests/timing_test.gd`](../tests/timing_test.gd) /
-[`tests/timing_test_capture.vrt.gd`](../tests/timing_test_capture.vrt.gd)
+サンプル実装: [`tests/timing_test.gd`](../../tests/timing_test.gd) /
+[`tests/timing_test_capture.vrt.gd`](../../tests/timing_test_capture.vrt.gd)
 
 ---
 
@@ -253,8 +253,8 @@ vr_screenshots/
 └── command_test_interaction_03_success_effect.png ← 正解入力後（演出表示）
 ```
 
-サンプル実装: [`tests/command_test.gd`](../tests/command_test.gd) /
-[`tests/command_test_capture.vrt.gd`](../tests/command_test_capture.vrt.gd)
+サンプル実装: [`tests/command_test.gd`](../../tests/command_test.gd) /
+[`tests/command_test_capture.vrt.gd`](../../tests/command_test_capture.vrt.gd)
 
 ---
 
