@@ -27,6 +27,12 @@ tests/
 | `random_test.tscn` | ランダムな位置・色・サイズの矩形 20 個 | Pattern 1（グローバル seed 固定） |
 | `random_dots_test.tscn` | ランダムな位置・半径・色の円 40 個 | stories 設定なし・デフォルト seed |
 | `timing_test.tscn` | 2 秒かけてスライドするバー | `delay_ms`・`script` によるタイミング制御 |
+| `button_test.tscn` | カウンターボタン + disabled ボタン | ボタン押下前後の状態変化 |
+| `click_test.tscn` | 4×2 カードグリッド | クリックによる選択状態切り替え |
+| `command_test.tscn` | コマンド入力エリア + 成功エフェクト | コマンド入力成功時の特殊演出 |
+
+インタラクション操作テスト（`button_test`・`click_test`・`command_test`）の詳細は
+[`docs/interaction_testing.md`](../docs/interaction_testing.md) を参照してください。
 
 ## タイミングテストシーン（timing_test）
 
@@ -79,6 +85,42 @@ vr_screenshots/
 ├── timing_test_direct_t050.png
 └── timing_test_direct_t100.png
 ```
+
+## ボタン操作テストシーン（button_test）
+
+カウンターとボタン 3 つ（Count Up / Reset / Disabled）を持つシーン。
+`click_button(idx)` を呼び出してボタン押下を再現し、状態変化を記録する。
+
+| 出力ファイル | 説明 |
+| --- | --- |
+| `button_test_interaction_01_initial.png` | 初期状態（Count: 0） |
+| `button_test_interaction_02_after_click1.png` | Count Up を 1 回押した後（Count: 1） |
+| `button_test_interaction_03_after_click3.png` | Count Up を計 3 回押した後（Count: 3） |
+| `button_test_interaction_04_after_reset.png` | Reset を押した後（Count: 0） |
+
+## クリック操作テストシーン（click_test）
+
+4×2 グリッドのカードを持つシーン。
+`select_card(idx)` でクリック選択を再現し、複数選択・選択解除の状態変化を記録する。
+
+| 出力ファイル | 説明 |
+| --- | --- |
+| `click_test_interaction_01_initial.png` | 初期状態（全カード未選択） |
+| `click_test_interaction_02_card0_selected.png` | カード 0 を選択 |
+| `click_test_interaction_03_multi_selected.png` | カード 0・3・5 を選択 |
+| `click_test_interaction_04_card0_deselected.png` | カード 0 を再クリックして解除 |
+
+## コマンド入力テストシーン（command_test）
+
+コマンド入力欄と成功エフェクト（画面端の虹色ボーダー）を持つシーン。
+`input_command(text)` でコマンド入力を再現する。
+正解コマンドは `"GODOT"`。
+
+| 出力ファイル | 説明 |
+| --- | --- |
+| `command_test_interaction_01_initial.png` | 初期状態（入力なし） |
+| `command_test_interaction_02_wrong_command.png` | 不正解コマンド（`"HELLO"`）入力後 |
+| `command_test_interaction_03_success_effect.png` | 正解コマンド（`"GODOT"`）入力後（演出表示） |
 
 ## 実行方法
 

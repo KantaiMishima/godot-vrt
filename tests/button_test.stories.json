@@ -1,0 +1,9 @@
+{
+  "stories": [
+    {
+      "name": "interaction",
+      "seed": 0,
+      "script": "res://button_test_capture.vrt.gd"
+    }
+  ]
+}
