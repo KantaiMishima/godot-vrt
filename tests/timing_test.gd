@@ -21,6 +21,8 @@ var _elapsed := 0.0
 var _bar: ColorRect
 ## 各 25%・50%・75% 地点を示すマーカー
 var _markers: Array[ColorRect] = []
+## set_progress() 呼び出し後にアニメーションを止めるフラグ
+var _frozen := false
 
 
 func _ready() -> void:
@@ -62,7 +64,16 @@ func _build_bar() -> void:
 	add_child(_bar)
 
 
+## バーの位置を進行率 t（0.0〜1.0）で直接セットする。
+## 呼び出し後はアニメーションが停止する。
+func set_progress(t: float) -> void:
+	_frozen = true
+	_bar.position.x = TRACK_X + t * (TRACK_END_X - TRACK_X)
+
+
 func _process(delta: float) -> void:
+	if _frozen:
+		return
 	_elapsed = minf(_elapsed + delta, TRAVEL_DURATION)
 	var t := _elapsed / TRAVEL_DURATION
 	_bar.position.x = TRACK_X + t * (TRACK_END_X - TRACK_X)

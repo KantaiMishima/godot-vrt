@@ -24,10 +24,10 @@
       "comment": "2000ms 待機後に撮影（バーは右端）"
     },
     {
-      "name": "multi",
+      "name": "direct",
       "seed": 0,
       "script": "res://timing_test_capture.vrt.gd",
-      "comment": "外部スクリプトで 1 シーンから 3 枚撮影（100ms・500ms・2000ms）"
+      "comment": "外部スクリプトでバー位置を直接指定して 4 枚撮影（t=0%・25%・50%・100%）"
     }
   ]
 }

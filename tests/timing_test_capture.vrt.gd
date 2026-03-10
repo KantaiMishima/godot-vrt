@@ -2,24 +2,17 @@ extends RefCounted
 
 ## timing_test.tscn 用の外部キャプチャスクリプト
 ##
-## 1 回のシーンロードからバーのアニメーション途中を 3 枚撮影する。
-## SETTLE_FRAMES が終わった時点を起点として、以下のタイミングで撮影する:
-##   - 100ms 後  → バーは左端付近
-##   - 500ms 後  → バーは約 25% 地点
-##   - 2000ms 後 → バーは右端（アニメーション完了）
+## scene_node.set_progress(t) でバーの位置を直接指定し、4 枚撮影する。
+## アニメーション待ちを一切行わないため、環境依存なく正確な位置が記録される。
 ##
-## 出力ファイル名:
-##   timing_test_multi_0100ms.png
-##   timing_test_multi_0500ms.png
-##   timing_test_multi_2000ms.png
+## 出力ファイル名（story 名 "direct"）:
+##   timing_test_direct_t000.png   ← t = 0%  （左端）
+##   timing_test_direct_t025.png   ← t = 25%
+##   timing_test_direct_t050.png   ← t = 50%
+##   timing_test_direct_t100.png   ← t = 100%（右端）
 
 
 func run(scene_node: Node, session: Object) -> void:
-	await session.wait_ms(100)
-	await session.take_screenshot("0100ms")
-
-	await session.wait_ms(400)
-	await session.take_screenshot("0500ms")
-
-	await session.wait_ms(1500)
-	await session.take_screenshot("2000ms")
+	for t: float in [0.0, 0.25, 0.5, 1.0]:
+		scene_node.set_progress(t)
+		await session.take_screenshot("t%03d" % int(t * 100))

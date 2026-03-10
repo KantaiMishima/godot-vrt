@@ -31,7 +31,7 @@ tests/
 ## タイミングテストシーン（timing_test）
 
 バーが左端から右端へ 2 秒かけて移動するアニメーションを持つシーン。
-撮影タイミングを変えることで、異なる位置のバーが記録される。
+`delay_ms` と `direct` の 2 種類のアプローチで撮影タイミングを制御する。
 
 ### delay_ms を使ったバリエーション
 
@@ -40,8 +40,8 @@ tests/
 
 | story name | delay_ms | 期待されるバー位置 |
 | --- | --- | --- |
-| `delay_t0` | 0 | 左端付近 |
-| `delay_t500` | 500 | 約 25% |
+| `delay_t0000` | 0 | 左端付近 |
+| `delay_t0500` | 500 | 約 25% |
 | `delay_t1000` | 1000 | 約 50% |
 | `delay_t2000` | 2000 | 右端 |
 
@@ -49,23 +49,35 @@ tests/
 
 ```text
 vr_screenshots/
-├── timing_test_delay_t0.png
-├── timing_test_delay_t500.png
+├── timing_test_delay_t0000.png
+├── timing_test_delay_t0500.png
 ├── timing_test_delay_t1000.png
 └── timing_test_delay_t2000.png
 ```
 
-### script を使った複数枚撮影
+### direct アプローチ（直接位置指定）
 
-`timing_test_capture.vrt.gd` が 1 回のシーンロードから 3 枚を連続撮影する。
+`timing_test_capture.vrt.gd` が `scene_node.set_progress(t)` を呼び出し、
+バーの位置を直接セットして 4 枚撮影する。アニメーション待ちを一切行わないため、
+`delay_ms` と異なり実行環境の速度に依存しない。
+
+`set_progress(t)` を呼び出すとアニメーションが停止し、次のフレームでも位置が維持される。
+
+| story name | t | 期待されるバー位置 |
+| --- | --- | --- |
+| `direct` | 0.00 | 左端（0%） |
+| `direct` | 0.25 | 25% 地点 |
+| `direct` | 0.50 | 50% 地点 |
+| `direct` | 1.00 | 右端（100%） |
 
 出力:
 
 ```text
 vr_screenshots/
-├── timing_test_multi_100ms.png
-├── timing_test_multi_500ms.png
-└── timing_test_multi_2000ms.png
+├── timing_test_direct_t000.png
+├── timing_test_direct_t025.png
+├── timing_test_direct_t050.png
+└── timing_test_direct_t100.png
 ```
 
 ## 実行方法
