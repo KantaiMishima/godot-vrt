@@ -1,0 +1,89 @@
+name: VRT - Web
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-and-capture:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Godot のセットアップ ─────────────────────────────────────────────
+      - name: Download Godot
+        run: |
+          RELEASE_TAG=$(curl -s "https://api.github.com/repos/godotengine/godot/releases/latest" \
+            | jq -r '.tag_name')
+          FILENAME="Godot_v${RELEASE_TAG}_linux.x86_64"
+          echo "Downloading Godot ${RELEASE_TAG}..."
+          wget -q "https://github.com/godotengine/godot/releases/download/${RELEASE_TAG}/${FILENAME}.zip"
+          unzip -q "${FILENAME}.zip"
+          mv "${FILENAME}" godot
+          chmod +x godot
+
+      - name: Download Web export templates
+        run: |
+          RELEASE_TAG=$(./godot --version | grep -oP '\d+\.\d+\.\d+' | head -1)
+          TEMPLATE_URL="https://github.com/godotengine/godot/releases/download/${RELEASE_TAG}-stable/Godot_v${RELEASE_TAG}-stable_export_templates.tpz"
+          echo "Downloading export templates..."
+          wget -q "$TEMPLATE_URL" -O templates.tpz
+          mkdir -p ~/.local/share/godot/export_templates/${RELEASE_TAG}.stable
+          unzip -q templates.tpz -d /tmp/templates
+          mv /tmp/templates/templates/* ~/.local/share/godot/export_templates/${RELEASE_TAG}.stable/
+
+      # ── Web エクスポート ──────────────────────────────────────────────────
+      - name: Export to Web
+        run: |
+          mkdir -p exports/web
+          xvfb-run ./godot --headless --path "$PWD/tests" \
+            --export-release Web "$PWD/exports/web/index.html"
+
+      # ── Node.js + Playwright のセットアップ ──────────────────────────────
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      # ── HTTP サーバー起動 → Playwright でキャプチャ ──────────────────────
+      - name: Start HTTP server
+        run: npx serve exports/web -p 8080 &
+
+      - name: Wait for server
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8080 && break
+            sleep 1
+          done
+
+      - name: Capture screenshots
+        env:
+          VRT_WEB_URL: http://localhost:8080
+          VRT_OUTPUT_DIR: ${{ github.workspace }}/tests/vr_screenshots
+          VRT_TIMEOUT_MS: "180000"
+        run: node runner/web_capture.js
+
+      # ── Argos にアップロード ──────────────────────────────────────────────
+      - name: Upload screenshots to Argos
+        run: |
+          npm exec -- argos upload \
+            --token ${{ secrets.ARGOS_TOKEN }} \
+            --build-name web \
+            ./tests/vr_screenshots
+
+      # ── アーティファクトとして保存（任意） ───────────────────────────────
+      - name: Upload screenshots as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vrt-screenshots-web
+          path: tests/vr_screenshots/
+          retention-days: 7

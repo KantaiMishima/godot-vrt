@@ -20,3 +20,8 @@ node_modules/
 
 # Generated VRT screenshots (created by CI)
 tests/vr_screenshots/
+
+# Platform export outputs (built by CI or locally)
+exports/web/
+exports/android/
+exports/ios/

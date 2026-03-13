@@ -12,3 +12,4 @@ config_version=5
 
 config/name="godot-vrt tests"
 config/features=PackedStringArray("4.5")
+run/main_scene="res://runner/runner.tscn"

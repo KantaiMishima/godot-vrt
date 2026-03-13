@@ -128,6 +128,37 @@ Placing a `{scene_name}.stories.json` next to the scene file lets you configure 
 
 ---
 
+## Platform VRT (Web / Android / iOS)
+
+Platforms that require a build step use a dedicated **platform runner**
+(`runner/platform_runner.gd`) exported as the main scene. The runner receives
+the scene list from the environment (URL query params for Web, a JSON config
+file for Android/iOS) and saves screenshots to `user://vr_screenshots/`.
+
+| Platform | Runner | Screenshot retrieval | CI workflow |
+| --- | --- | --- | --- |
+| Web | HTML5 export + Playwright | `window.__VRT_SCREENSHOTS__` | `vrt-web.yml` |
+| Android | APK + Android Emulator | `adb pull` | `vrt-android.yml` |
+| iOS | Simulator build + xcrun | `simctl` file access | `vrt-ios.yml` (macOS runner) |
+
+**Platform-specific design docs:**
+
+| Document | Description |
+| --- | --- |
+| [docs/en/platform_web.md](docs/en/platform_web.md) | Web (HTML5) — Playwright capture, local verification |
+| [docs/en/platform_android.md](docs/en/platform_android.md) | Android — emulator setup, adb workflow, local verification |
+| [docs/en/platform_ios.md](docs/en/platform_ios.md) | iOS — Simulator setup, xcrun workflow, local verification |
+
+**Platform-specific test scenes (in `tests/`):**
+
+| Scene | Platform | What it tests |
+| --- | --- | --- |
+| `web_ui_test.tscn` | Web | Tab bar, cookie banner, touch-friendly buttons |
+| `android_ui_test.tscn` | Android | Bottom nav, FAB badge, Material Design cards |
+| `ios_ui_test.tscn` | iOS | Dynamic Island, nav push, tab bar, home indicator |
+
+---
+
 ## Documentation
 
 | Document | Description |

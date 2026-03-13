@@ -1,0 +1,147 @@
+name: VRT - Android
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-and-capture:
+    runs-on: ubuntu-latest
+
+    env:
+      PKG_NAME: com.example.godot_vrt_tests
+      APK_PATH: exports/android/godot_vrt_tests.apk
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Android SDK のセットアップ ────────────────────────────────────────
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses
+
+      - name: Install Android build tools and emulator
+        run: |
+          sdkmanager \
+            "platform-tools" \
+            "build-tools;34.0.0" \
+            "platforms;android-34" \
+            "emulator" \
+            "system-images;android-34;google_apis;x86_64"
+
+      # ── Godot のセットアップ ─────────────────────────────────────────────
+      - name: Download Godot
+        run: |
+          RELEASE_TAG=$(curl -s "https://api.github.com/repos/godotengine/godot/releases/latest" \
+            | jq -r '.tag_name')
+          FILENAME="Godot_v${RELEASE_TAG}_linux.x86_64"
+          echo "Downloading Godot ${RELEASE_TAG}..."
+          wget -q "https://github.com/godotengine/godot/releases/download/${RELEASE_TAG}/${FILENAME}.zip"
+          unzip -q "${FILENAME}.zip"
+          mv "${FILENAME}" godot
+          chmod +x godot
+
+      - name: Download Android export templates
+        run: |
+          RELEASE_TAG=$(./godot --version | grep -oP '\d+\.\d+\.\d+' | head -1)
+          TEMPLATE_URL="https://github.com/godotengine/godot/releases/download/${RELEASE_TAG}-stable/Godot_v${RELEASE_TAG}-stable_export_templates.tpz"
+          echo "Downloading export templates..."
+          wget -q "$TEMPLATE_URL" -O templates.tpz
+          mkdir -p ~/.local/share/godot/export_templates/${RELEASE_TAG}.stable
+          unzip -q templates.tpz -d /tmp/templates
+          mv /tmp/templates/templates/* ~/.local/share/godot/export_templates/${RELEASE_TAG}.stable/
+
+      # ── Android APK のビルド ─────────────────────────────────────────────
+      - name: Export to Android (debug)
+        run: |
+          mkdir -p exports/android
+          xvfb-run ./godot --headless --path "$PWD/tests" \
+            --export-debug Android "$PWD/$APK_PATH"
+
+      # ── Android Emulator の起動 ──────────────────────────────────────────
+      - name: Create AVD
+        run: |
+          echo "no" | avdmanager create avd \
+            --force \
+            --name vrt_avd \
+            --package "system-images;android-34;google_apis;x86_64" \
+            --abi x86_64
+
+      - name: Start emulator
+        run: |
+          emulator -avd vrt_avd \
+            -no-window -no-audio -no-snapshot \
+            -gpu swiftshader_indirect &
+          adb wait-for-device shell \
+            'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
+          echo "Emulator ready."
+
+      # ── APK のインストールとキャプチャ ───────────────────────────────────
+      - name: Install APK
+        run: adb install -r "$APK_PATH"
+
+      - name: Push VRT config (all scenes)
+        run: |
+          FILES_DIR="/sdcard/Android/data/${PKG_NAME}/files"
+          adb shell mkdir -p "$FILES_DIR"
+          # 特定シーンのみキャプチャする場合は、ここで vrt_config.json を push する。
+          # echo '{"scenes":["res://android_ui_test.tscn"]}' | \
+          #   adb shell "cat > ${FILES_DIR}/vrt_config.json"
+
+      - name: Launch app
+        run: adb shell am start -n "${PKG_NAME}/.GodotApp"
+
+      - name: Wait for VRT completion
+        run: |
+          FILES_DIR="/sdcard/Android/data/${PKG_NAME}/files"
+          DONE="${FILES_DIR}/vrt_done"
+          for i in $(seq 1 90); do
+            if adb shell "[ -f ${DONE} ] && echo yes" 2>/dev/null | grep -q yes; then
+              echo "VRT complete."
+              exit 0
+            fi
+            echo "Waiting... (${i}/90)"
+            sleep 2
+          done
+          echo "Timeout waiting for VRT completion."
+          exit 1
+
+      - name: Pull screenshots
+        run: |
+          mkdir -p tests/vr_screenshots
+          FILES_DIR="/sdcard/Android/data/${PKG_NAME}/files"
+          adb pull "${FILES_DIR}/vr_screenshots/." tests/vr_screenshots/ || true
+
+      # ── Node.js + Argos ──────────────────────────────────────────────────
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Upload screenshots to Argos
+        run: |
+          npm exec -- argos upload \
+            --token ${{ secrets.ARGOS_TOKEN }} \
+            --build-name android \
+            ./tests/vr_screenshots
+
+      # ── アーティファクトとして保存（任意） ───────────────────────────────
+      - name: Upload screenshots as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vrt-screenshots-android
+          path: tests/vr_screenshots/
+          retention-days: 7

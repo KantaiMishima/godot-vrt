@@ -1,0 +1,9 @@
+{
+  "stories": [
+    {
+      "name": "interaction",
+      "seed": 12345,
+      "script": "res://android_ui_test_capture.vrt.gd"
+    }
+  ]
+}
