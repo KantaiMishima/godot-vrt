@@ -88,29 +88,22 @@ find "$APP_DATA" -name "*.png" -path "*/vr_screenshots/*" -exec cp {} ./vr_scree
 
 ## 現在のステータス
 
-このワークフローは CI で**無効化**されています。`vrt-ios.yml` のジョブには
-`if: false` が設定されており、オーケストレーター `vrt.yml` から呼び出されますが
-ジョブはスキップされます。
-
-iOS テストを有効にするには:
-
-1. 有効な Apple Developer Team ID を取得する
-2. `tests/export_presets.cfg` の `PLACEHOLDER` を置き換える
-3. `.github/workflows/vrt-ios.yml` のジョブから `if: false` を削除する
+このワークフローは CI で**無効化**されています。`vrt-ios.yml` のジョブに `if: false`
+が設定されています。有効化するには: (1) `tests/export_presets.cfg` に実際の Apple
+Developer Team ID を設定、(2) `.github/workflows/vrt-ios.yml` から `if: false` を削除。
 
 ## CI ワークフロー
 
 ワークフローは `.github/workflows/vrt-ios.yml` に定義されており、
-オーケストレーター `.github/workflows/vrt.yml` から呼び出されます。`macos-latest`
-で実行され、macOS 用 Godot のダウンロード、Xcode プロジェクトのエクスポート、
-Simulator 向けビルド、アプリの実行、スクリーンショットの取得、
-`vrt-screenshots-ios` アーティファクトとしてのアップロードを行います。
+`.github/workflows/vrt.yml` から呼び出されます。`macos-latest` で実行され、
+macOS 用 Godot のダウンロード、Xcode プロジェクトのエクスポート、Simulator 向け
+ビルド、アプリの実行、`vrt-screenshots-ios` アーティファクトのアップロードを行います。
 
 ## 制限事項
 
 - **Apple Developer Team ID**: 一部の Godot エクスポート設定では Simulator ビルドにも
   有効な Team ID が必要です。未設定の場合、エクスポートが失敗する可能性があります。
-- **macOS 専用**: iOS Simulator は macOS ランナーでのみ利用可能です。CI での macOS
+- **macOS 専用**: iOS Simulator は macOS ランナーでのみ利用可能です。CI の macOS
   ランナーはプロビジョニングが遅く、コストも高くなります。
-- **Simulator と実機の差異**: iOS Simulator のレンダリングは実機と異なる場合があります。
-  特に GPU アクセラレーションされたエフェクトや Metal シェーダーで差異が出やすいです。
+- **Simulator と実機の差異**: レンダリングは実機と異なる場合があります。特に GPU
+  アクセラレーションされたエフェクトや Metal シェーダーで差異が出やすいです。

@@ -85,20 +85,14 @@ done
 
 ## CI Workflow
 
-The workflow is defined in `.github/workflows/vrt-android.yml` and called by the
-orchestrator `.github/workflows/vrt.yml`. It sets up Java 17, Android SDK, creates
-a debug keystore, exports the APK, enables KVM for emulator acceleration, runs the
-app on a Pixel 6 profile emulator, extracts screenshots, and uploads them as the
-`vrt-screenshots-android` artifact.
+The workflow is defined in `.github/workflows/vrt-android.yml` and called by
+`.github/workflows/vrt.yml`. It sets up Java 17 and Android SDK, creates a debug
+keystore, exports the APK, enables KVM, runs the app on a Pixel 6 emulator, and
+uploads screenshots as the `vrt-screenshots-android` artifact.
 
 ## Limitations
 
-- **System image**: The `google_apis` system image is required for ARM translation
-  support on x86_64 emulators. Using `default` images may cause crashes with native
-  libraries.
-- **KVM**: Ubuntu CI runners require KVM to be enabled for acceptable emulator
-  performance. The workflow configures udev rules to allow KVM access.
-- **Emulator boot time**: Cold-booting the emulator can take 60-120 seconds. The
-  workflow sets a 300-second timeout to handle slow starts.
-- **Screenshot extraction**: `adb run-as` requires the APK to be a debug build.
-  Release builds restrict filesystem access.
+- **System image**: `google_apis` is required for ARM translation on x86_64 emulators.
+- **KVM**: Ubuntu CI runners need KVM enabled for emulator performance.
+- **Emulator boot time**: Cold boot takes 60-120s; the workflow allows 300s.
+- **Screenshot extraction**: `adb run-as` requires debug builds only.

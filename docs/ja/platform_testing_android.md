@@ -62,26 +62,20 @@ ETC2/ASTC テクスチャ圧縮が有効になります。
 ## ローカル検証手順
 
 ```bash
-# 1. デバッグキーストアを作成（未作成の場合）
-keytool -genkeypair -v -keystore ~/.android/debug.keystore \
-  -storepass android -alias androiddebugkey -keypass android \
-  -keyalg RSA -keysize 2048 -validity 10000 \
-  -dname "CN=Android Debug,O=Android,C=US"
-
-# 2. APK をエクスポート
+# 1. APK をエクスポート
 mkdir -p tests/build/android
 godot --headless --path tests --export-debug "Android" build/android/vrt-tests.apk
 
-# 3. エミュレーターを起動してインストール
+# 2. エミュレーターを起動してインストール
 emulator -avd Pixel_6_API_31 -no-window -no-audio &
 adb wait-for-device
 adb install tests/build/android/vrt-tests.apk
 
-# 4. アプリを起動して完了を待機
+# 3. アプリを起動して完了を待機
 adb shell monkey -p com.godot.vrt.tests -c android.intent.category.LAUNCHER 1
 adb logcat -s godot | grep -m1 "=== Done ==="
 
-# 5. スクリーンショットを取得
+# 4. スクリーンショットを取得
 mkdir -p vr_screenshots_android
 adb shell run-as com.godot.vrt.tests ls files/vr_screenshots/ | while read f; do
   adb exec-out run-as com.godot.vrt.tests cat "files/vr_screenshots/$f" \

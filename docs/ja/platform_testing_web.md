@@ -78,19 +78,16 @@ npx playwright test --config=playwright.config.js
 ## CI ワークフロー
 
 ワークフローは `.github/workflows/vrt-web.yml` に定義されており、
-オーケストレーター `.github/workflows/vrt.yml` から呼び出されます。
-Godot とエクスポートテンプレートのダウンロード、Web ビルドのエクスポート、
-Playwright のインストール、スクリーンショット撮影、`vrt-screenshots-web`
-アーティファクトとしてのアップロードを行います。
+`.github/workflows/vrt.yml` から呼び出されます。Godot とエクスポートテンプレートの
+ダウンロード、Web ビルドのエクスポート、Playwright のインストール、スクリーンショット
+撮影、`vrt-screenshots-web` アーティファクトとしてのアップロードを行います。
 
 ## 制限事項
 
-- **SharedArrayBuffer**: Godot の Web ビルドは `SharedArrayBuffer` を必要とします。
-  これは `Cross-Origin-Opener-Policy: same-origin` と
-  `Cross-Origin-Embedder-Policy: require-corp` の両ヘッダーが設定されている場合にのみ
-  使用可能です。ローカルサーバーと CI ワークフローの両方でこれらを設定しています。
-- **Emscripten FS アクセス**: 仮想ファイルシステムからファイルを取得する仕組みは
-  Godot のバージョンによって異なる場合があります。アップグレード前に対象バージョンで
-  テストしてください。
+- **SharedArrayBuffer**: Godot の Web ビルドは `SharedArrayBuffer` を必要とし、
+  `Cross-Origin-Opener-Policy: same-origin` と
+  `Cross-Origin-Embedder-Policy: require-corp` の両ヘッダーが必要です。
+- **Emscripten FS アクセス**: 仮想ファイルシステムからのファイル取得は Godot の
+  バージョンによって異なる場合があります。
 - **GPU レンダリング**: ヘッドレス Chromium はソフトウェアレンダリングを使用します。
   GPU レンダリングとの見た目の差異が発生する可能性があります。

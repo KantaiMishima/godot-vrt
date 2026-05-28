@@ -77,19 +77,17 @@ npx playwright test --config=playwright.config.js
 
 ## CI Workflow
 
-The workflow is defined in `.github/workflows/vrt-web.yml` and called by the
-orchestrator `.github/workflows/vrt.yml`. It downloads Godot and export templates,
-exports the Web build, installs Playwright, captures screenshots, and uploads
-them as the `vrt-screenshots-web` artifact.
+The workflow is defined in `.github/workflows/vrt-web.yml` and called by
+`.github/workflows/vrt.yml`. It downloads Godot and export templates, exports the
+Web build, installs Playwright, captures screenshots, and uploads them as the
+`vrt-screenshots-web` artifact.
 
 ## Limitations
 
-- **SharedArrayBuffer**: Godot Web builds require `SharedArrayBuffer`, which is only
-  available when both `Cross-Origin-Opener-Policy: same-origin` and
-  `Cross-Origin-Embedder-Policy: require-corp` headers are set. The local server
-  and CI workflow both set these headers.
+- **SharedArrayBuffer**: Godot Web builds require `SharedArrayBuffer`, which needs
+  both `Cross-Origin-Opener-Policy: same-origin` and
+  `Cross-Origin-Embedder-Policy: require-corp` headers.
 - **Emscripten FS access**: The mechanism for extracting files from the virtual
-  filesystem may vary between Godot versions. Test against the target Godot version
-  before upgrading.
+  filesystem may vary between Godot versions.
 - **GPU rendering**: Headless Chromium uses software rendering. Visual differences
   from GPU-rendered output are possible.
