@@ -136,6 +136,9 @@ xvfb-run godot --rendering-driver opengl3 --script addons/godot-vrt/capture.gd
 | [docs/ja/stories_config.md](docs/ja/stories_config.md) | Stories 設定ファイルのフォーマットと使い方 |
 | [docs/ja/random_seed.md](docs/ja/random_seed.md) | 乱数固定化の設計と各パターンの解説 |
 | [docs/ja/interaction_testing.md](docs/ja/interaction_testing.md) | インタラクション操作テストのパターンと実装例 |
+| [docs/ja/platform_testing_web.md](docs/ja/platform_testing_web.md) | Web プラットフォームテストの設定とワークフロー |
+| [docs/ja/platform_testing_android.md](docs/ja/platform_testing_android.md) | Android プラットフォームテストの設定とワークフロー |
+| [docs/ja/platform_testing_ios.md](docs/ja/platform_testing_ios.md) | iOS プラットフォームテストの設定とワークフロー |
 
 ---
 

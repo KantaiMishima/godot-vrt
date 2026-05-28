@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/KantaiMishima/godot-vrt#readme",
   "devDependencies": {
-    "@argos-ci/cli": "^4.1.1"
+    "@argos-ci/cli": "^4.1.1",
+    "@playwright/test": "^1.52.0"
   }
 }

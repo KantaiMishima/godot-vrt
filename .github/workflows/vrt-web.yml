@@ -1,0 +1,82 @@
+name: VRT Web
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  capture-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Godot and export templates
+        run: |
+          RELEASE_TAG=$(curl -s "https://api.github.com/repos/godotengine/godot/releases/latest" | jq -r '.tag_name')
+          VERSION="${RELEASE_TAG}"
+          TEMPLATE_VERSION="${VERSION//-/.}"
+          echo "Godot version: ${VERSION} (template dir: ${TEMPLATE_VERSION})"
+
+          FILENAME="Godot_v${VERSION}_linux.x86_64"
+          wget -q "https://github.com/godotengine/godot/releases/download/${VERSION}/${FILENAME}.zip"
+          unzip -q "${FILENAME}.zip"
+          mv "${FILENAME}" godot
+          chmod +x godot
+
+          TEMPLATES_FILE="Godot_v${VERSION}_export_templates.tpz"
+          wget -q "https://github.com/godotengine/godot/releases/download/${VERSION}/${TEMPLATES_FILE}"
+          TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/${TEMPLATE_VERSION}"
+          mkdir -p "${TEMPLATE_DIR}"
+          unzip -q "${TEMPLATES_FILE}" -d /tmp/templates
+          mv /tmp/templates/templates/* "${TEMPLATE_DIR}/"
+
+      - name: Import project resources
+        run: |
+          timeout 120 ./godot --headless --editor --quit --path tests 2>&1 || true
+
+      - name: Export Web build
+        run: |
+          mkdir -p tests/build/web
+          ./godot --headless --path tests --export-release "Web" build/web/index.html
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+
+      - name: Capture screenshots from Web build
+        run: |
+          node -e "
+          const http = require('http'), fs = require('fs'), path = require('path');
+          const dir = 'tests/build/web';
+          http.createServer((req, res) => {
+            const url = req.url === '/' ? '/index.html' : req.url;
+            const file = path.join(dir, url);
+            res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+            res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+            try {
+              const data = fs.readFileSync(file);
+              const types = {'.html':'text/html','.js':'text/javascript','.wasm':'application/wasm','.pck':'application/octet-stream','.png':'image/png'};
+              res.setHeader('Content-Type', types[path.extname(file)] || 'application/octet-stream');
+              res.end(data);
+            } catch(e) { res.writeHead(404); res.end(); }
+          }).listen(8080, () => console.log('Server ready on :8080'));
+          " &
+          sleep 2
+
+          npx playwright test --config=playwright.config.js
+
+          kill %1 2>/dev/null || true
+
+      - name: Upload screenshots as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vrt-screenshots-web
+          path: vr_screenshots_web/
+          if-no-files-found: warn
