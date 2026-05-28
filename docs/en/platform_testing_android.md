@@ -2,10 +2,9 @@
 
 ## Overview
 
-godot-vrt supports Visual Regression Testing for Godot projects exported to Android.
-The workflow builds a debug APK, installs it on an Android emulator, lets the Godot
-`vrt_runner` capture screenshots to `user://`, extracts them via `adb run-as`, and
-uploads the results to Argos.
+godot-vrt supports VRT for Android-exported Godot projects. The workflow builds a
+debug APK, installs it on an emulator, captures screenshots to `user://`, extracts
+them via `adb run-as`, and uploads the results to Argos.
 
 ## Architecture
 
@@ -25,10 +24,8 @@ Argos upload for visual comparison
 
 ## Test Scene
 
-`tests/android_ui_test.tscn` renders a Material Design UI containing a status bar
-with time and battery indicators, an app bar with a hamburger menu, a card list with
-icons and subtitles, a floating action button (FAB), a bottom navigation bar, and a
-notch cutout area.
+`tests/android_ui_test.tscn` renders a Material Design UI with a status bar, app bar
+with hamburger menu, card list, FAB, bottom navigation bar, and notch cutout area.
 
 ## Stories
 
@@ -41,9 +38,8 @@ notch cutout area.
 
 ## Prerequisites
 
-- Godot 4.5+ with Android export templates installed
-- Android SDK (API 34+ build tools, API 31 system image)
-- Java JDK 17+
+- Godot 4.5+ with Android export templates
+- Android SDK (API 34+ build tools, API 31 system image), Java JDK 17+
 - Debug keystore (`~/.android/debug.keystore`)
 
 ## Export Settings
@@ -56,8 +52,7 @@ package/name        = "godot-vrt tests"
 export_path         = "build/android/vrt-tests.apk"
 ```
 
-The export uses debug mode (`--export-debug`) with ETC2/ASTC texture compression
-enabled via the export templates.
+The export uses debug mode (`--export-debug`) with ETC2/ASTC texture compression.
 
 ## Local Verification
 
@@ -85,10 +80,9 @@ done
 
 ## CI Workflow
 
-The workflow is defined in `.github/workflows/vrt-android.yml` and called by
-`.github/workflows/vrt.yml`. It sets up Java 17 and Android SDK, creates a debug
-keystore, exports the APK, enables KVM, runs the app on a Pixel 6 emulator, and
-uploads screenshots as the `vrt-screenshots-android` artifact.
+Defined in `.github/workflows/vrt-android.yml` (called by `vrt.yml`). Sets up
+Java 17, Android SDK, debug keystore, exports APK, enables KVM, runs the app on
+a Pixel 6 emulator, and uploads `vrt-screenshots-android` artifacts.
 
 ## Limitations
 

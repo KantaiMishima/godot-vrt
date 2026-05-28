@@ -2,11 +2,10 @@
 
 ## Overview
 
-godot-vrt supports Visual Regression Testing for Godot projects exported to the Web platform.
-The workflow exports the project as an HTML5 build, serves it with required headers,
-and uses Playwright to load the page in a real browser. The Godot `vrt_runner` captures
-screenshots into the Emscripten virtual filesystem, which Playwright then extracts for
-Argos upload.
+godot-vrt supports VRT for Godot projects exported to the Web platform. The workflow
+exports an HTML5 build, serves it with required headers, and uses Playwright to load
+the page. The `vrt_runner` captures screenshots into the Emscripten virtual filesystem,
+which Playwright extracts for Argos upload.
 
 ## Architecture
 
@@ -26,9 +25,8 @@ Argos upload for visual comparison
 
 ## Test Scene
 
-`tests/web_ui_test.tscn` renders a browser-like UI containing a header bar with
-navigation buttons and URL field, a responsive card grid, a loading progress bar,
-a viewport information panel, and a cookie consent banner.
+`tests/web_ui_test.tscn` renders a browser-like UI with a header bar, responsive
+card grid, loading progress bar, viewport info panel, and cookie consent banner.
 
 ## Stories
 

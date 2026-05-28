@@ -2,10 +2,9 @@
 
 ## 概要
 
-godot-vrt は Android にエクスポートした Godot プロジェクトのビジュアルリグレッションテストに対応しています。
-デバッグ APK をビルドし、Android エミュレーターにインストールして、Godot の
-`vrt_runner` が `user://` にスクリーンショットを保存します。その後 `adb run-as` で
-ファイルを取り出し、Argos にアップロードします。
+godot-vrt は Android エクスポートした Godot プロジェクトの VRT に対応しています。
+デバッグ APK をビルドしてエミュレーターにインストールし、`vrt_runner` が `user://`
+にスクリーンショットを保存、`adb run-as` で取り出して Argos にアップロードします。
 
 ## アーキテクチャ
 
@@ -25,10 +24,8 @@ Argos にアップロードして差分比較
 
 ## テストシーン
 
-`tests/android_ui_test.tscn` は Material Design 風の UI を描画します。時刻とバッテリー
-表示付きのステータスバー、ハンバーガーメニュー付きアプリバー、アイコンとサブタイトル
-付きのカードリスト、フローティングアクションボタン（FAB）、ボトムナビゲーションバー、
-ノッチ表示エリアを含みます。
+`tests/android_ui_test.tscn` は Material Design 風 UI を描画します。ステータスバー、
+アプリバー、カードリスト、FAB、ボトムナビゲーション、ノッチ表示エリアを含みます。
 
 ## ストーリー
 
@@ -42,8 +39,7 @@ Argos にアップロードして差分比較
 ## 前提条件
 
 - Godot 4.5+ と Android エクスポートテンプレート
-- Android SDK（API 34+ ビルドツール、API 31 システムイメージ）
-- Java JDK 17+
+- Android SDK（API 34+ ビルドツール、API 31 システムイメージ）、Java JDK 17+
 - デバッグキーストア（`~/.android/debug.keystore`）
 
 ## エクスポート設定
@@ -56,8 +52,7 @@ package/name        = "godot-vrt tests"
 export_path         = "build/android/vrt-tests.apk"
 ```
 
-デバッグモード（`--export-debug`）でエクスポートし、エクスポートテンプレート経由で
-ETC2/ASTC テクスチャ圧縮が有効になります。
+デバッグモード（`--export-debug`）で ETC2/ASTC テクスチャ圧縮付きのエクスポートです。
 
 ## ローカル検証手順
 
@@ -85,21 +80,14 @@ done
 
 ## CI ワークフロー
 
-ワークフローは `.github/workflows/vrt-android.yml` に定義されており、
-オーケストレーター `.github/workflows/vrt.yml` から呼び出されます。
-Java 17 と Android SDK のセットアップ、デバッグキーストアの作成、APK のエクスポート、
-KVM の有効化、Pixel 6 プロファイルでのエミュレーター実行、スクリーンショットの取得、
-`vrt-screenshots-android` アーティファクトとしてのアップロードを行います。
+`.github/workflows/vrt-android.yml`（`vrt.yml` から呼出）に定義されています。
+Java 17・Android SDK セットアップ、デバッグキーストア作成、APK エクスポート、KVM
+有効化、Pixel 6 エミュレーター実行、`vrt-screenshots-android` アップロードを行います。
 
 ## 制限事項
 
 - **システムイメージ**: x86_64 エミュレーターでの ARM トランスレーションには
-  `google_apis` システムイメージが必要です。`default` イメージではネイティブ
-  ライブラリがクラッシュする場合があります。
-- **KVM**: Ubuntu CI ランナーではエミュレーターの十分なパフォーマンスを得るために
-  KVM の有効化が必要です。ワークフローでは udev ルールを設定して KVM アクセスを
-  許可しています。
-- **エミュレーター起動時間**: コールドブートには 60-120 秒かかります。ワークフローでは
-  300 秒のタイムアウトを設定して低速な起動に対応しています。
-- **スクリーンショット取得**: `adb run-as` はデバッグビルドの APK でのみ動作します。
-  リリースビルドではファイルシステムへのアクセスが制限されます。
+  `google_apis` が必要です。
+- **KVM**: Ubuntu CI ランナーではエミュレーターのために KVM の有効化が必要です。
+- **エミュレーター起動時間**: コールドブートに 60-120 秒。タイムアウトは 300 秒。
+- **スクリーンショット取得**: `adb run-as` はデバッグビルドでのみ動作します。
