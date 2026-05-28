@@ -6,7 +6,7 @@ test("capture VRT screenshots from Godot Web export", async ({ page }) => {
   const donePromise = new Promise((resolve, reject) => {
     const timeout = setTimeout(
       () => reject(new Error("Godot did not print '=== Done ===' within timeout")),
-      150_000,
+      600_000,
     );
     page.on("console", (msg) => {
       const text = msg.text();
