@@ -37,7 +37,9 @@ class VRTSession:
 
 func _ready() -> void:
 	print("=== Godot VRT Runner (Export Build) ===")
+	print("OS: ", OS.get_name())
 	print("Project: ", ProjectSettings.globalize_path("res://"))
+	print("User data dir: ", OS.get_user_data_dir())
 
 	var args := OS.get_cmdline_user_args()
 	var scenes: Array[String] = []
@@ -54,9 +56,17 @@ func _ready() -> void:
 
 	print("Scenes to capture: ", scenes.size())
 
-	# エクスポートビルドでは user:// を使用（res:// はAPK等で読み取り専用）
 	var output_dir := OS.get_user_data_dir().path_join(OUTPUT_DIR)
+	print("Output dir: ", output_dir)
 	DirAccess.make_dir_recursive_absolute(output_dir)
+
+	var dir_check := DirAccess.open(output_dir)
+	if dir_check == null:
+		printerr("FAIL: Could not open output dir: ", output_dir)
+		printerr("DirAccess error: ", DirAccess.get_open_error())
+	else:
+		print("Output dir opened OK")
+
 	_clear_output_dir(output_dir)
 
 	for scene_path in scenes:
