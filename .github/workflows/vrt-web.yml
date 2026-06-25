@@ -8,7 +8,7 @@ jobs:
   capture-web:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download Godot and export templates
         run: |
@@ -39,7 +39,7 @@ jobs:
           mkdir -p tests/build/web
           ./godot --headless --path tests --export-debug "Web" build/web/index.html
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version-file: package.json
 
@@ -100,7 +100,7 @@ jobs:
 
       - name: Upload screenshots as artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vrt-screenshots-web
           path: vr_screenshots_web/

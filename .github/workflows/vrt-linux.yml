@@ -8,7 +8,7 @@ jobs:
   capture-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install rendering dependencies
         run: sudo apt-get install -y xvfb libgl1-mesa-dri
@@ -28,7 +28,7 @@ jobs:
           xvfb-run ./godot --rendering-driver opengl3 --fixed-fps 60 --path "$PWD/tests" --script "$PWD/capture.gd"
 
       - name: Upload screenshots as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vrt-screenshots-linux
           path: tests/vr_screenshots/
