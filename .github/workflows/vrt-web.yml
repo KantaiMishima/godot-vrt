@@ -65,25 +65,39 @@ jobs:
 
       - name: Capture screenshots from Web build
         run: |
+          mkdir -p vr_screenshots_web
           node -e "
           const http = require('http'), fs = require('fs'), path = require('path');
           const dir = 'tests/build/web';
-          let reqCount = 0;
+          const outDir = 'vr_screenshots_web';
           http.createServer((req, res) => {
-            reqCount++;
-            const url = req.url === '/' ? '/index.html' : req.url;
-            const file = path.join(dir, url);
             res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
             res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+            res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+
+            // Godot ランナーからのスクリーンショットアップロードを受け取る
+            if (req.method === 'POST' && req.url.startsWith('/__vrt_upload/')) {
+              const name = path.basename(decodeURIComponent(req.url.slice('/__vrt_upload/'.length)));
+              const chunks = [];
+              req.on('data', (c) => chunks.push(c));
+              req.on('end', () => {
+                const buf = Buffer.concat(chunks);
+                fs.writeFileSync(path.join(outDir, name), buf);
+                console.log('[server] uploaded ' + name + ' (' + buf.length + ' bytes)');
+                res.writeHead(200); res.end('OK');
+              });
+              return;
+            }
+
+            const url = req.url === '/' ? '/index.html' : req.url;
+            const file = path.join(dir, url);
             try {
               const data = fs.readFileSync(file);
               const types = {'.html':'text/html','.js':'text/javascript','.wasm':'application/wasm','.pck':'application/octet-stream','.png':'image/png','.worker.js':'text/javascript','.side.wasm':'application/wasm','.audio.worklet.js':'text/javascript'};
-              const ext = path.extname(file);
-              res.setHeader('Content-Type', types[ext] || 'application/octet-stream');
-              console.log('[server] #' + reqCount + ' 200 ' + url + ' (' + data.length + ' bytes)');
+              res.setHeader('Content-Type', types[path.extname(file)] || 'application/octet-stream');
               res.end(data);
             } catch(e) {
-              console.log('[server] #' + reqCount + ' 404 ' + url);
+              console.log('[server] 404 ' + url);
               res.writeHead(404); res.end();
             }
           }).listen(8080, () => console.log('[server] Ready on :8080'));
@@ -97,6 +111,11 @@ jobs:
           npx playwright test --config=playwright.config.js || true
 
           kill $SERVER_PID 2>/dev/null || true
+
+          echo "=== Uploaded screenshots ==="
+          ls -la vr_screenshots_web/ 2>/dev/null || echo "No screenshots uploaded"
+          COUNT=$(find vr_screenshots_web -name "*.png" 2>/dev/null | wc -l)
+          echo "Total: ${COUNT} screenshots"
 
       - name: Upload screenshots as artifact
         if: always()

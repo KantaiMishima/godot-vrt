@@ -9,6 +9,13 @@ const VRT_DEFAULT_SEED: int = 12345
 const STORIES_EXT := ".stories.json"
 const SCENE_MANIFEST := "res://vrt_scenes.json"
 
+## Web エクスポートではブラウザの仮想 FS が quit 時に破棄されるため、
+## キャプチャした PNG を同一オリジンのローカルサーバーへ HTTP POST する。
+const UPLOAD_PATH := "/__vrt_upload/"
+
+var _http: HTTPRequest = null
+var _upload_base: String = ""
+
 
 class VRTSession:
 	var _tree: SceneTree
@@ -37,6 +44,10 @@ class VRTSession:
 
 
 func _ready() -> void:
+	# _ready 内ではシーンツリーが子の構築中で add_child() が失敗するため、
+	# 1 フレーム待ってから処理を開始する
+	await get_tree().process_frame
+
 	print("=== Godot VRT Runner (Export Build) ===")
 	print("OS: ", OS.get_name())
 	print("Project: ", ProjectSettings.globalize_path("res://"))
@@ -70,11 +81,77 @@ func _ready() -> void:
 
 	_clear_output_dir(output_dir)
 
+	_setup_uploader()
+
 	for scene_path in scenes:
 		await _capture_scene(scene_path, output_dir)
 
+	# Web: 仮想 FS が quit 時に破棄される前にローカルサーバーへ送信する
+	if not _upload_base.is_empty():
+		await _upload_all(output_dir)
+
 	print("=== Done ===")
 	get_tree().quit(0)
+
+
+## アップロード先のベース URL を決定し、必要なら HTTPRequest を準備する。
+## Web エクスポートのみ同一オリジンへアップロードする。
+func _setup_uploader() -> void:
+	_upload_base = _get_upload_base_url()
+	if _upload_base.is_empty():
+		return
+	_http = HTTPRequest.new()
+	add_child(_http)
+	print("HTTP upload enabled: ", _upload_base)
+
+
+func _get_upload_base_url() -> String:
+	if OS.has_feature("web"):
+		var origin: Variant = JavaScriptBridge.eval("location.origin", true)
+		if origin is String and not (origin as String).is_empty():
+			return origin
+	return ""
+
+
+## 出力ディレクトリ内の全 PNG をローカルサーバーへ POST する。
+func _upload_all(output_dir: String) -> void:
+	var dir := DirAccess.open(output_dir)
+	if dir == null:
+		printerr("Upload: could not open ", output_dir)
+		return
+	var count := 0
+	dir.list_dir_begin()
+	var fname := dir.get_next()
+	while fname != "":
+		if not dir.current_is_dir() and fname.ends_with(".png"):
+			if await _upload_file(output_dir.path_join(fname), fname):
+				count += 1
+		fname = dir.get_next()
+	dir.list_dir_end()
+	print("Uploaded ", count, " screenshots")
+
+
+func _upload_file(path: String, fname: String) -> bool:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		printerr("  Upload FAIL: cannot read ", fname)
+		return false
+	var bytes := file.get_buffer(file.get_length())
+	file.close()
+
+	var url := _upload_base + UPLOAD_PATH + fname.uri_encode()
+	var err := _http.request_raw(url, ["Content-Type: image/png"], HTTPClient.METHOD_POST, bytes)
+	if err != OK:
+		printerr("  Upload FAIL: request error ", err, " for ", fname)
+		return false
+
+	var result: Array = await _http.request_completed
+	var code: int = result[1]
+	if code == 200:
+		print("  Uploaded: ", fname)
+		return true
+	printerr("  Upload FAIL: HTTP ", code, " for ", fname)
+	return false
 
 
 func _capture_scene(scene_path: String, output_dir: String) -> void:
