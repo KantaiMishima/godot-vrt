@@ -1,0 +1,13 @@
+{
+  "scenes": [
+    "res://android_ui_test.tscn",
+    "res://button_test.tscn",
+    "res://click_test.tscn",
+    "res://command_test.tscn",
+    "res://ios_ui_test.tscn",
+    "res://random_dots_test.tscn",
+    "res://random_test.tscn",
+    "res://timing_test.tscn",
+    "res://web_ui_test.tscn"
+  ]
+}

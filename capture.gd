@@ -274,7 +274,7 @@ func _scan_dir(path: String, result: Array[String]) -> void:
 		var full := path.path_join(name)
 		if dir.current_is_dir():
 			_scan_dir(full, result)
-		elif name.ends_with(".tscn"):
+		elif name.ends_with(".tscn") and name != "vrt_runner.tscn":
 			result.append(full)
 		name = dir.get_next()
 	dir.list_dir_end()

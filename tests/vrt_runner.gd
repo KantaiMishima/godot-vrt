@@ -7,6 +7,7 @@ const SETTLE_FRAMES := 5
 const OUTPUT_DIR := "vr_screenshots"
 const VRT_DEFAULT_SEED: int = 12345
 const STORIES_EXT := ".stories.json"
+const SCENE_MANIFEST := "res://vrt_scenes.json"
 
 
 class VRTSession:
@@ -235,6 +236,40 @@ func _load_stories(scene_path: String) -> Array[Dictionary]:
 func _find_all_scenes() -> Array[String]:
 	var result: Array[String] = []
 	_scan_dir("res://", result)
+	if result.is_empty():
+		# エクスポートビルドでは DirAccess で res:// を列挙できないため
+		# マニフェストファイルから読み込む
+		result = _load_scene_manifest()
+	return result
+
+
+func _load_scene_manifest() -> Array[String]:
+	var result: Array[String] = []
+	if not FileAccess.file_exists(SCENE_MANIFEST):
+		printerr("Scene manifest not found: ", SCENE_MANIFEST)
+		return result
+
+	var file := FileAccess.open(SCENE_MANIFEST, FileAccess.READ)
+	if file == null:
+		printerr("Could not open scene manifest: ", SCENE_MANIFEST)
+		return result
+
+	var json := JSON.new()
+	var err := json.parse(file.get_as_text())
+	file.close()
+	if err != OK:
+		printerr("Invalid JSON in scene manifest: ", SCENE_MANIFEST)
+		return result
+
+	var data: Variant = json.data
+	if data is Dictionary and data.has("scenes") and data["scenes"] is Array:
+		for entry: Variant in data["scenes"]:
+			if entry is String:
+				result.append(entry)
+		print("Loaded ", result.size(), " scenes from manifest")
+	else:
+		printerr("Scene manifest must have a 'scenes' array: ", SCENE_MANIFEST)
+
 	return result
 
 

@@ -82,48 +82,58 @@ test("capture VRT screenshots from Godot Web export", async ({ page }) => {
       };
     }
 
-    const dirsToCheck = [
-      "/home/web_user/vr_screenshots",
-      "/userfs/vr_screenshots",
-      "/vr_screenshots",
-      "/home/web_user",
-      "/userfs",
-    ];
-    const dirContents = {};
-    for (const dir of dirsToCheck) {
+    function findVrScreenshots(basePath, depth) {
+      if (depth > 6) return null;
       try {
-        dirContents[dir] = fsRef.readdir(dir);
-      } catch (_e) {
-        dirContents[dir] = "NOT_FOUND";
-      }
-    }
-
-    const screenshotDirs = [
-      "/home/web_user/vr_screenshots",
-      "/userfs/vr_screenshots",
-      "/vr_screenshots",
-    ];
-    for (const dir of screenshotDirs) {
-      try {
-        const entries = fsRef.readdir(dir).filter((f) => f.endsWith(".png"));
-        if (entries.length > 0) {
-          return {
-            dir,
-            dirContents,
-            files: entries.map((f) => ({
-              name: f,
-              data: Array.from(fsRef.readFile(dir + "/" + f)),
-            })),
-          };
+        const entries = fsRef.readdir(basePath).filter((e) => e !== "." && e !== "..");
+        const pngs = entries.filter((e) => e.endsWith(".png"));
+        if (basePath.endsWith("/vr_screenshots") && pngs.length > 0) {
+          return { dir: basePath, pngs };
+        }
+        for (const entry of entries) {
+          const full = basePath + "/" + entry;
+          try {
+            const stat = fsRef.stat(full);
+            if (fsRef.isDir(stat.mode)) {
+              const found = findVrScreenshots(full, depth + 1);
+              if (found) return found;
+            }
+          } catch (_e) {
+            /* skip */
+          }
         }
       } catch (_e) {
-        /* try next path */
+        /* skip */
+      }
+      return null;
+    }
+
+    const debugDirs = {};
+    for (const dir of ["/userfs", "/home/web_user", "/home"]) {
+      try {
+        debugDirs[dir] = fsRef.readdir(dir);
+      } catch (_e) {
+        debugDirs[dir] = "NOT_FOUND";
       }
     }
-    return { error: "No screenshots found in virtual FS", dirContents };
+
+    const found = findVrScreenshots("/userfs", 0) || findVrScreenshots("/home", 0);
+
+    if (!found) {
+      return { error: "No vr_screenshots directory found in virtual FS", debugDirs };
+    }
+
+    return {
+      dir: found.dir,
+      debugDirs,
+      files: found.pngs.map((f) => ({
+        name: f,
+        data: Array.from(fsRef.readFile(found.dir + "/" + f)),
+      })),
+    };
   });
 
-  console.log("FS scan result dirs:", JSON.stringify(result.dirContents || {}, null, 2));
+  console.log("FS debug dirs:", JSON.stringify(result.debugDirs || {}, null, 2));
 
   if (result.error) {
     console.error("Screenshot extraction failed:", result.error);
