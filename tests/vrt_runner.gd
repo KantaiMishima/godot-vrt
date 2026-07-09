@@ -54,6 +54,9 @@ func _ready() -> void:
 	print("OS: ", OS.get_name())
 	print("Project: ", ProjectSettings.globalize_path("res://"))
 	print("User data dir: ", OS.get_user_data_dir())
+	print("Video adapter: ", RenderingServer.get_video_adapter_name())
+	print("Video API: ", RenderingServer.get_video_adapter_api_version())
+	print("Rendering method (mobile): ", ProjectSettings.get_setting("rendering/renderer/rendering_method.mobile", "?"))
 
 	var args := OS.get_cmdline_user_args()
 	var scenes: Array[String] = []
@@ -184,11 +187,17 @@ func _capture_with_story(scene_path: String, packed: PackedScene, output_dir: St
 
 	seed(vrt_seed)
 
+	# SubViewportContainer で包むことで、Android の GLES3 バックエンドでも
+	# オフスクリーン SubViewport が確実に描画パスに乗るようにする
+	var container := SubViewportContainer.new()
+	container.stretch = false
+	get_tree().root.add_child(container)
+
 	var vp := SubViewport.new()
 	vp.size = vp_size
 	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	vp.transparent_bg = false
-	get_tree().root.add_child(vp)
+	container.add_child(vp)
 
 	var scene_node := packed.instantiate()
 	vp.add_child(scene_node)
@@ -226,6 +235,11 @@ func _capture_with_story(scene_path: String, packed: PackedScene, output_dir: St
 		if img == null or img.is_empty():
 			printerr("  FAIL: image is null or empty (seed=", vrt_seed, ")")
 		else:
+			var center := img.get_pixel(img.get_width() / 2, img.get_height() / 2)
+			var control_size := (scene_node as Control).size if scene_node is Control else Vector2.ZERO
+			print("  [diag] ", img.get_width(), "x", img.get_height(),
+					" center_px=", center, " scene=", scene_node.get_class(),
+					" children=", scene_node.get_child_count(), " control_size=", control_size)
 			var file_name := prefix + ".png"
 			var save_path := output_dir.path_join(file_name)
 			var err := img.save_png(save_path)
@@ -236,7 +250,7 @@ func _capture_with_story(scene_path: String, packed: PackedScene, output_dir: St
 
 	if is_instance_valid(scene_node):
 		scene_node.queue_free()
-	vp.queue_free()
+	container.queue_free()
 	await get_tree().process_frame
 
 
