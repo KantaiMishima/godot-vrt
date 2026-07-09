@@ -132,15 +132,16 @@ jobs:
 
           if [ "$DONE" = "false" ]; then
             echo "WARNING: Timed out waiting for VRT capture"
-            echo "=== Full Godot logcat ==="
-            adb logcat -d -s godot 2>/dev/null | tail -50
-            echo "=== Full GodotStdout logcat ==="
-            adb logcat -d -s GodotStdout 2>/dev/null | tail -50
-            echo "=== Full stderr logcat ==="
-            adb logcat -d -s GodotStderr 2>/dev/null | tail -50
             echo "=== Checking if app is still running ==="
             adb shell pidof com.godot.vrt.tests || echo "App not running"
           fi
+
+          echo "=== Full Godot logcat ==="
+          adb logcat -d -s godot 2>/dev/null | tail -300
+          echo "=== Full GodotStdout logcat ==="
+          adb logcat -d -s GodotStdout 2>/dev/null | tail -50
+          echo "=== Full stderr logcat ==="
+          adb logcat -d -s GodotStderr 2>/dev/null | tail -50
 
           echo "=== Extracting screenshots ==="
           mkdir -p vr_screenshots_android
