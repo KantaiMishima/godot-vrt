@@ -28,6 +28,8 @@ class VRTSession:
 
 	func take_screenshot(suffix: String = "") -> void:
 		await _tree.process_frame
+		# 描画完了を待ってから読み出す（Android GL で灰色になる対策）
+		await RenderingServer.frame_post_draw
 		var img := _vp.get_texture().get_image()
 		if img == null or img.is_empty():
 			printerr("  FAIL: image is null or empty (suffix=", suffix, ")")
@@ -216,6 +218,9 @@ func _capture_with_story(scene_path: String, packed: PackedScene, output_dir: St
 	else:
 		if delay_ms > 0:
 			await get_tree().create_timer(delay_ms / 1000.0).timeout
+
+		# 描画完了を待ってから読み出す（Android GL で灰色になる対策）
+		await RenderingServer.frame_post_draw
 
 		var img := vp.get_texture().get_image()
 		if img == null or img.is_empty():
