@@ -130,7 +130,7 @@ func _build_card_grid(s: Vector2) -> void:
 func _build_viewport_info(s: Vector2) -> void:
 	var y := s.y - 100.0
 	_make_panel(Vector2(40.0, y), Vector2(s.x - 80.0, 36.0), Color(0.90, 0.92, 0.95), 4)
-	var renderer := ProjectSettings.get_setting("rendering/renderer/rendering_method", "unknown")
+	var renderer := str(ProjectSettings.get_setting("rendering/renderer/rendering_method", "unknown"))
 	_viewport_label = _add_label(
 		Vector2(52.0, y + 9.0),
 		"Viewport: %dx%d | Renderer: %s" % [int(s.x), int(s.y), str(renderer)],

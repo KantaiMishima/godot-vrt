@@ -136,24 +136,6 @@ jobs:
             adb shell pidof com.godot.vrt.tests || echo "App not running"
           fi
 
-          echo "=== Screen probe (adb screencap) ==="
-          adb exec-out screencap > /tmp/screen.raw || true
-          python3 - <<'PY'
-          import struct
-          try:
-              d = open("/tmp/screen.raw", "rb").read()
-              w, h, f = struct.unpack("<III", d[:12])
-              off = 16 if len(d) - 16 == w * h * 4 else 12
-              def px(x, y):
-                  i = off + (y * w + x) * 4
-                  return tuple(d[i:i + 4])
-              print(f"screen {w}x{h} format={f}")
-              print(f"  center={px(w // 2, h // 2)}")
-              print(f"  q1={px(w // 4, h // 4)} q3={px(3 * w // 4, 3 * h // 4)}")
-          except Exception as e:
-              print("probe failed:", e)
-          PY
-
           echo "=== Full Godot logcat ==="
           adb logcat -d -s godot 2>/dev/null | tail -300
           echo "=== Full GodotStdout logcat ==="
