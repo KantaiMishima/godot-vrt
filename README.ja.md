@@ -13,6 +13,8 @@ Godot アドオン — **visual regression test** の仕組みを Godot エン�
 - シーン（`.tscn`）のスクリーンショットを自動でキャプチャする
 - キャプチャした画像を基準画像と比較することで、意図しない UI/レイアウトの変化を検出できる（**visual regression test**）
 - CI 環境（Linux/macOS）での実行に対応
+- エクスポートビルドによるプラットフォーム UI テスト — Web / Android / iOS
+  （[docs/ja/](docs/ja/) の `platform_testing_*.md` を参照）
 
 > **比較・差分管理** は利用者側に委ねており、Argos CI / reg-suit / pixelmatch などの任意のツールと組み合わせて使います。
 

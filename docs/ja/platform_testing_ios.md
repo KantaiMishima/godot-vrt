@@ -10,7 +10,7 @@ Team ID が必要なため、現在は無効化されています。
 ## アーキテクチャ
 
 ```text
-Xcode プロジェクトをエクスポート (godot --headless --export-release "iOS")
+Xcode プロジェクトをエクスポート (godot --headless --export-debug "iOS")
   ↓
 Simulator 向けにビルド (xcodebuild -destination 'iOS Simulator')
   ↓
@@ -38,6 +38,12 @@ Argos にアップロードして差分比較
 | iphone_dark | 393x852 | `ios_ui_test_dark_capture.vrt.gd` | ダークモード |
 | ipad | 1024x1366 | - | iPad 縦向き |
 
+## シーンマニフェスト
+
+エクスポートビルドでは `DirAccess` で `res://` 内の `.tscn` を列挙できないため、
+`vrt_runner` は `tests/vrt_scenes.json` からキャプチャ対象シーンを読み込みます。
+**シーンを追加したらこのマニフェストにも追記してください。**
+
 ## 前提条件
 
 - macOS と Xcode
@@ -62,9 +68,9 @@ export_path                    = "build/ios/"
 ```bash
 # 1. エクスポートとビルド
 mkdir -p tests/build/ios
-godot --headless --path tests --export-release "iOS" build/ios/
+godot --headless --path tests --export-debug "iOS" build/ios/
 xcodebuild -project tests/build/ios/vrt-tests.xcodeproj -scheme vrt-tests \
-  -destination 'platform=iOS Simulator,name=iPhone 15' -configuration Release \
+  -destination 'platform=iOS Simulator,name=iPhone 15' -configuration Debug \
   CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO build
 
 # 2. Simulator にインストールして実行

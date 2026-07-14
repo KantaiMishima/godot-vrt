@@ -146,31 +146,17 @@ jobs:
           echo "=== Extracting screenshots ==="
           mkdir -p vr_screenshots_android
 
-          echo "--- Checking app data dir contents ---"
-          adb shell run-as com.godot.vrt.tests ls -la . 2>&1 || echo "Could not ls app data dir"
-          echo "--- Checking files/ dir ---"
-          adb shell run-as com.godot.vrt.tests ls -la files/ 2>&1 || echo "No files/ dir"
-          echo "--- Checking files/vr_screenshots/ dir ---"
-          adb shell run-as com.godot.vrt.tests ls -la files/vr_screenshots/ 2>&1 || echo "No files/vr_screenshots/ dir"
-
-          echo "--- Searching for any PNG files in app data ---"
-          adb shell run-as com.godot.vrt.tests find . -name "*.png" -type f 2>&1 || echo "find command failed"
-
           FILE_LIST=$(adb shell run-as com.godot.vrt.tests ls files/vr_screenshots/ 2>/dev/null | tr -d '\r')
           if [ -z "$FILE_LIST" ]; then
             echo "No files found in files/vr_screenshots/"
-            echo "--- Trying alternate path: app_userdata/ ---"
-            adb shell run-as com.godot.vrt.tests ls -la app_userdata/ 2>&1 || echo "No app_userdata/ dir"
-            adb shell run-as com.godot.vrt.tests find . -name "vr_screenshots" -type d 2>&1 || echo "No vr_screenshots dir found anywhere"
+            adb shell run-as com.godot.vrt.tests ls -la files/ 2>&1 || echo "No files/ dir"
           else
-            echo "Found files: $FILE_LIST"
             for f in $FILE_LIST; do
               case "$f" in
                 *.png)
-                  echo "Extracting: $f"
                   adb exec-out run-as com.godot.vrt.tests cat "files/vr_screenshots/$f" > "vr_screenshots_android/$f"
                   FSIZE=$(stat -c%s "vr_screenshots_android/$f" 2>/dev/null || echo "0")
-                  echo "  Size: ${FSIZE} bytes"
+                  echo "Extracted: $f (${FSIZE} bytes)"
                   if [ "$FSIZE" -lt 100 ]; then
                     echo "  WARNING: File suspiciously small, may be corrupted"
                   fi
@@ -179,8 +165,6 @@ jobs:
             done
           fi
 
-          echo "=== Final screenshot listing ==="
-          ls -la vr_screenshots_android/ 2>/dev/null || echo "No screenshots extracted"
           COUNT=$(find vr_screenshots_android -name "*.png" 2>/dev/null | wc -l)
           echo "Total extracted: ${COUNT} screenshots"
           SCRIPT

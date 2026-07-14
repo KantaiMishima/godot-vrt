@@ -10,7 +10,7 @@ disabled because it requires a valid Apple Developer Team ID.
 ## Architecture
 
 ```text
-Export Xcode project (godot --headless --export-release "iOS")
+Export Xcode project (godot --headless --export-debug "iOS")
   ↓
 Build for Simulator (xcodebuild -destination 'iOS Simulator')
   ↓
@@ -38,6 +38,12 @@ tab bar, and home indicator.
 | iphone_dark | 393x852 | `ios_ui_test_dark_capture.vrt.gd` | Dark mode variant |
 | ipad | 1024x1366 | - | iPad portrait |
 
+## Scene Manifest
+
+Export builds cannot enumerate `.tscn` files under `res://` with `DirAccess`, so
+`vrt_runner` reads the capture targets from `tests/vrt_scenes.json`.
+**When you add a scene, also add it to this manifest.**
+
 ## Prerequisites
 
 - macOS with Xcode installed
@@ -62,9 +68,9 @@ Replace `PLACEHOLDER` with a real Apple Developer Team ID before enabling.
 ```bash
 # 1. Export and build
 mkdir -p tests/build/ios
-godot --headless --path tests --export-release "iOS" build/ios/
+godot --headless --path tests --export-debug "iOS" build/ios/
 xcodebuild -project tests/build/ios/vrt-tests.xcodeproj -scheme vrt-tests \
-  -destination 'platform=iOS Simulator,name=iPhone 15' -configuration Release \
+  -destination 'platform=iOS Simulator,name=iPhone 15' -configuration Debug \
   CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO build
 
 # 2. Install and run on Simulator

@@ -15,6 +15,8 @@ Captures screenshots of scenes and compares them against baseline images to dete
 - Automatically captures screenshots of scenes (`.tscn`)
 - Detects unintended UI/layout changes by comparing captured images against baselines (**visual regression testing**)
 - Supports execution in CI environments (Linux/macOS)
+- Platform UI testing via export builds — Web / Android / iOS (see
+  [docs/en/](docs/en/) `platform_testing_*.md`)
 
 > **Comparison and diff management** are left to the user — combine with any VRT tool such as Argos CI, reg-suit, or pixelmatch.
 
