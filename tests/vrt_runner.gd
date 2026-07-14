@@ -88,6 +88,8 @@ func _ready() -> void:
 
 	_setup_uploader()
 
+	await _probe_root_viewport()
+
 	for scene_path in scenes:
 		await _capture_scene(scene_path, output_dir)
 
@@ -96,7 +98,30 @@ func _ready() -> void:
 		await _upload_all(output_dir)
 
 	print("=== Done ===")
+	if OS.get_name() == "Android":
+		# ホスト側の adb screencap プローブのため終了せずに表示を維持する
+		return
 	get_tree().quit(0)
+
+
+## [probe] Android 灰色問題の切り分け用。
+## ルートビューポート(画面直描き)に赤いフルスクリーン矩形を表示し、
+## in-engine 読み出しが機能するか確認する。矩形は表示したままにして、
+## ホスト側の adb screencap でも画面合成の生死を確認できるようにする。
+func _probe_root_viewport() -> void:
+	var probe := ColorRect.new()
+	probe.color = Color(1, 0, 0)
+	probe.set_anchors_preset(Control.PRESET_FULL_RECT)
+	get_tree().root.add_child(probe)
+	for i in 5:
+		await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	var rimg := get_tree().root.get_texture().get_image()
+	if rimg == null or rimg.is_empty():
+		print("[probe] root viewport image is null/empty")
+		return
+	var c := rimg.get_pixel(rimg.get_width() / 2, rimg.get_height() / 2)
+	print("[probe] root viewport ", rimg.get_width(), "x", rimg.get_height(), " center=", c)
 
 
 ## アップロード先のベース URL を決定し、必要なら HTTPRequest を準備する。
