@@ -211,7 +211,7 @@ jobs:
           target: aosp_atd
           arch: x86_64
           profile: pixel_6
-          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu host
           emulator-boot-timeout: 300
           script: bash /tmp/emulator-script.sh
 
