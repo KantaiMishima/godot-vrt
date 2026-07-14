@@ -204,6 +204,14 @@ jobs:
           SCRIPT
           chmod +x /tmp/emulator-script.sh
 
+      - name: Start Xvfb for host GPU rendering
+        run: |
+          sudo apt-get install -y xvfb libgl1 mesa-utils > /dev/null 2>&1 || true
+          Xvfb :99 -screen 0 1600x1200x24 &
+          sleep 2
+          echo "DISPLAY=:99" >> $GITHUB_ENV
+          DISPLAY=:99 glxinfo -B 2>/dev/null | head -10 || echo "glxinfo not available"
+
       - name: Run on Android Emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -211,7 +219,7 @@ jobs:
           target: aosp_atd
           arch: x86_64
           profile: pixel_6
-          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu host
+          emulator-options: -no-audio -no-snapshot -no-boot-anim -gpu host
           emulator-boot-timeout: 300
           script: bash /tmp/emulator-script.sh
 
