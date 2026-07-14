@@ -206,7 +206,7 @@ jobs:
 
       - name: Start Xvfb for host GPU rendering
         run: |
-          sudo apt-get install -y xvfb libgl1 mesa-utils > /dev/null 2>&1 || true
+          sudo apt-get install -y xvfb libgl1 mesa-utils libpulse0 libxcb-cursor0 libxkbcommon-x11-0 > /dev/null 2>&1 || true
           Xvfb :99 -screen 0 1600x1200x24 &
           sleep 2
           echo "DISPLAY=:99" >> $GITHUB_ENV
