@@ -1,8 +1,8 @@
 {
   "stories": [
-    { "name": "default", "seed": 12345, "viewport_size": [412, 915] },
-    { "name": "with_notch", "seed": 12345, "viewport_size": [412, 915], "script": "res://android_ui_test_capture.vrt.gd" },
-    { "name": "landscape", "seed": 12345, "viewport_size": [915, 412] },
-    { "name": "tablet", "seed": 12345, "viewport_size": [800, 1280] }
+    { "name": "default", "seed": 12346, "viewport_size": [412, 915] },
+    { "name": "with_notch", "seed": 12346, "viewport_size": [412, 915], "script": "res://android_ui_test_capture.vrt.gd" },
+    { "name": "landscape", "seed": 12346, "viewport_size": [915, 412] },
+    { "name": "tablet", "seed": 12346, "viewport_size": [800, 1280] }
   ]
 }

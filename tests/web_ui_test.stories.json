@@ -1,8 +1,8 @@
 {
   "stories": [
-    { "name": "default", "seed": 12345 },
-    { "name": "loading", "seed": 12345, "script": "res://web_ui_test_capture.vrt.gd" },
-    { "name": "mobile_portrait", "seed": 12345, "viewport_size": [393, 852] },
-    { "name": "tablet_landscape", "seed": 12345, "viewport_size": [1024, 768] }
+    { "name": "default", "seed": 12346 },
+    { "name": "loading", "seed": 12346, "script": "res://web_ui_test_capture.vrt.gd" },
+    { "name": "mobile_portrait", "seed": 12346, "viewport_size": [393, 852] },
+    { "name": "tablet_landscape", "seed": 12346, "viewport_size": [1024, 768] }
   ]
 }
