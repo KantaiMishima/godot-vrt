@@ -11,4 +11,10 @@ config_version=5
 [application]
 
 config/name="godot-vrt tests"
+run/main_scene="res://vrt_runner.tscn"
 config/features=PackedStringArray("4.5")
+
+[rendering]
+
+renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true

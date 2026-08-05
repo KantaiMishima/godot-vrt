@@ -1,0 +1,126 @@
+name: VRT Web
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  capture-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download Godot and export templates
+        run: |
+          RELEASE_TAG=$(curl -s "https://api.github.com/repos/godotengine/godot/releases/latest" | jq -r '.tag_name')
+          VERSION="${RELEASE_TAG}"
+          TEMPLATE_VERSION="${VERSION//-/.}"
+          echo "Godot version: ${VERSION} (template dir: ${TEMPLATE_VERSION})"
+
+          FILENAME="Godot_v${VERSION}_linux.x86_64"
+          wget -q "https://github.com/godotengine/godot/releases/download/${VERSION}/${FILENAME}.zip"
+          unzip -q "${FILENAME}.zip"
+          mv "${FILENAME}" godot
+          chmod +x godot
+
+          TEMPLATES_FILE="Godot_v${VERSION}_export_templates.tpz"
+          wget -q "https://github.com/godotengine/godot/releases/download/${VERSION}/${TEMPLATES_FILE}"
+          TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/${TEMPLATE_VERSION}"
+          mkdir -p "${TEMPLATE_DIR}"
+          unzip -q "${TEMPLATES_FILE}" -d /tmp/templates
+          mv /tmp/templates/templates/* "${TEMPLATE_DIR}/"
+
+      - name: Import project resources
+        run: |
+          timeout 120 ./godot --headless --editor --quit --path tests 2>&1 || true
+
+      - name: Export Web build
+        run: |
+          mkdir -p tests/build/web
+          ./godot --headless --path tests --export-debug "Web" build/web/index.html
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+
+      - name: Verify Web build output
+        run: |
+          echo "=== Web build output ==="
+          ls -la tests/build/web/
+          echo "=== Checking for required files ==="
+          for f in index.html index.js index.wasm index.pck; do
+            if [ -f "tests/build/web/$f" ]; then
+              SIZE=$(stat -c%s "tests/build/web/$f" 2>/dev/null || echo "unknown")
+              echo "  OK: $f (${SIZE} bytes)"
+            else
+              echo "  MISSING: $f"
+            fi
+          done
+
+      - name: Capture screenshots from Web build
+        run: |
+          mkdir -p vr_screenshots_web
+          node -e "
+          const http = require('http'), fs = require('fs'), path = require('path');
+          const dir = 'tests/build/web';
+          const outDir = 'vr_screenshots_web';
+          http.createServer((req, res) => {
+            res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+            res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+            res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+
+            // Godot ランナーからのスクリーンショットアップロードを受け取る
+            if (req.method === 'POST' && req.url.startsWith('/__vrt_upload/')) {
+              const name = path.basename(decodeURIComponent(req.url.slice('/__vrt_upload/'.length)));
+              const chunks = [];
+              req.on('data', (c) => chunks.push(c));
+              req.on('end', () => {
+                const buf = Buffer.concat(chunks);
+                fs.writeFileSync(path.join(outDir, name), buf);
+                console.log('[server] uploaded ' + name + ' (' + buf.length + ' bytes)');
+                res.writeHead(200); res.end('OK');
+              });
+              return;
+            }
+
+            const url = req.url === '/' ? '/index.html' : req.url;
+            const file = path.join(dir, url);
+            try {
+              const data = fs.readFileSync(file);
+              const types = {'.html':'text/html','.js':'text/javascript','.wasm':'application/wasm','.pck':'application/octet-stream','.png':'image/png','.worker.js':'text/javascript','.side.wasm':'application/wasm','.audio.worklet.js':'text/javascript'};
+              res.setHeader('Content-Type', types[path.extname(file)] || 'application/octet-stream');
+              res.end(data);
+            } catch(e) {
+              console.log('[server] 404 ' + url);
+              res.writeHead(404); res.end();
+            }
+          }).listen(8080, () => console.log('[server] Ready on :8080'));
+          " &
+          SERVER_PID=$!
+          sleep 2
+
+          echo "=== Verifying server is running ==="
+          curl -s -o /dev/null -w "HTTP %{http_code}" http://localhost:8080/ && echo " - Server OK" || echo " - Server FAILED"
+
+          npx playwright test --config=playwright.config.js || true
+
+          kill $SERVER_PID 2>/dev/null || true
+
+          echo "=== Uploaded screenshots ==="
+          ls -la vr_screenshots_web/ 2>/dev/null || echo "No screenshots uploaded"
+          COUNT=$(find vr_screenshots_web -name "*.png" 2>/dev/null | wc -l)
+          echo "Total: ${COUNT} screenshots"
+
+      - name: Upload screenshots as artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: vrt-screenshots-web
+          path: vr_screenshots_web/
+          if-no-files-found: warn

@@ -15,6 +15,8 @@ Captures screenshots of scenes and compares them against baseline images to dete
 - Automatically captures screenshots of scenes (`.tscn`)
 - Detects unintended UI/layout changes by comparing captured images against baselines (**visual regression testing**)
 - Supports execution in CI environments (Linux/macOS)
+- Platform UI testing via export builds — Web / Android / iOS (see
+  [docs/en/](docs/en/) `platform_testing_*.md`)
 
 > **Comparison and diff management** are left to the user — combine with any VRT tool such as Argos CI, reg-suit, or pixelmatch.
 
@@ -135,6 +137,9 @@ Placing a `{scene_name}.stories.json` next to the scene file lets you configure 
 | [docs/en/stories_config.md](docs/en/stories_config.md) | Stories configuration file format and usage |
 | [docs/en/random_seed.md](docs/en/random_seed.md) | Random seed design and pattern breakdown |
 | [docs/en/interaction_testing.md](docs/en/interaction_testing.md) | Interaction testing patterns and implementation examples |
+| [docs/en/platform_testing_web.md](docs/en/platform_testing_web.md) | Web platform testing setup and workflow |
+| [docs/en/platform_testing_android.md](docs/en/platform_testing_android.md) | Android platform testing setup and workflow |
+| [docs/en/platform_testing_ios.md](docs/en/platform_testing_ios.md) | iOS platform testing setup and workflow |
 
 **Japanese documentation:** [docs/ja/](docs/ja/)
 

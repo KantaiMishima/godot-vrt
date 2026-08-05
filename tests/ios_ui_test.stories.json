@@ -1,0 +1,8 @@
+{
+  "stories": [
+    { "name": "iphone_notch", "seed": 12345, "viewport_size": [390, 844] },
+    { "name": "iphone_dynamic_island", "seed": 12345, "viewport_size": [393, 852], "script": "res://ios_ui_test_capture.vrt.gd" },
+    { "name": "iphone_dark", "seed": 12345, "viewport_size": [393, 852], "script": "res://ios_ui_test_dark_capture.vrt.gd" },
+    { "name": "ipad", "seed": 12345, "viewport_size": [1024, 1366] }
+  ]
+}

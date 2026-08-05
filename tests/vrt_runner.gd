@@ -1,56 +1,35 @@
-extends SceneTree
+extends Node
 
-## Visual Regression Test - Capture Script
-##
-## Usage (対象プロジェクトの .tscn をキャプチャ):
-##   GODOT_MTL_OFF_SCREEN=1 godot \
-##     --path /path/to/your/project \
-##     --rendering-driver metal \
-##     --script /path/to/godot/tests/visual_regression/capture.gd \
-##     -- res://title.tscn
-##
-## 引数なしの場合はプロジェクト内の全 .tscn をキャプチャ:
-##   GODOT_MTL_OFF_SCREEN=1 godot \
-##     --path /path/to/your/project \
-##     --rendering-driver metal \
-##     --script /path/to/godot/tests/visual_regression/capture.gd
-##
-## Output (デフォルト):  {project_path}/vr_screenshots/{scene_name}.png
-## Output (stories設定): {project_path}/vr_screenshots/{scene_name}_{story_name}.png
-## Output (script複数枚): {project_path}/vr_screenshots/{scene_name}_{story_name}_{suffix}.png
+## エクスポートビルド用 VRT ランナー
 
-const VIEWPORT_SIZE := Vector2i(1280, 720)
+const DEFAULT_VIEWPORT_SIZE := Vector2i(1280, 720)
 const SETTLE_FRAMES := 5
 const OUTPUT_DIR := "vr_screenshots"
 const VRT_DEFAULT_SEED: int = 12345
 const STORIES_EXT := ".stories.json"
+const SCENE_MANIFEST := "res://vrt_scenes.json"
+
+## Web エクスポートではブラウザの仮想 FS が quit 時に破棄されるため、
+## キャプチャした PNG を同一オリジンのローカルサーバーへ HTTP POST する。
+const UPLOAD_PATH := "/__vrt_upload/"
+
+var _http: HTTPRequest = null
+var _upload_base: String = ""
 
 
-## 外部スクリプト（.vrt.gd）に渡すセッションオブジェクト。
-## スクリーンショットの撮影タイミングと待機をスクリプト側から制御できる。
-##
-## 使い方（外部スクリプト例）:
-##   extends RefCounted
-##   func run(scene_node: Node, session: Object) -> void:
-##       await session.wait_ms(100)
-##       await session.take_screenshot("0100ms")
-##       await session.wait_ms(400)
-##       await session.take_screenshot("0500ms")
 class VRTSession:
 	var _tree: SceneTree
 	var _vp: SubViewport
 	var _output_dir: String
-	## "{scene}_{story}" 形式のプレフィックス（拡張子なし）
 	var _prefix: String
 
-	## ms ミリ秒待機する。
 	func wait_ms(ms: float) -> void:
 		await _tree.create_timer(ms / 1000.0).timeout
 
-	## スクリーンショットを撮影して保存する。
-	## suffix を指定すると "{prefix}_{suffix}.png"、省略すると "{prefix}.png"。
 	func take_screenshot(suffix: String = "") -> void:
 		await _tree.process_frame
+		# 描画完了を待ってから読み出す（Android GL で灰色になる対策）
+		await RenderingServer.frame_post_draw
 		var img := _vp.get_texture().get_image()
 		if img == null or img.is_empty():
 			printerr("  FAIL: image is null or empty (suffix=", suffix, ")")
@@ -66,11 +45,19 @@ class VRTSession:
 			printerr("  FAIL: Could not save PNG (", name, ", err=", err, ")")
 
 
-func _initialize() -> void:
-	print("=== Godot Visual Regression Capture ===")
-	print("Project: ", ProjectSettings.globalize_path("res://"))
+func _ready() -> void:
+	# _ready 内ではシーンツリーが子の構築中で add_child() が失敗するため、
+	# 1 フレーム待ってから処理を開始する
+	await get_tree().process_frame
 
-	# -- 以降の引数をシーンパスとして受け取る
+	print("=== Godot VRT Runner (Export Build) ===")
+	print("OS: ", OS.get_name())
+	print("Project: ", ProjectSettings.globalize_path("res://"))
+	print("User data dir: ", OS.get_user_data_dir())
+	print("Video adapter: ", RenderingServer.get_video_adapter_name())
+	print("Video API: ", RenderingServer.get_video_adapter_api_version())
+	print("Rendering method (mobile): ", ProjectSettings.get_setting("rendering/renderer/rendering_method.mobile", "?"))
+
 	var args := OS.get_cmdline_user_args()
 	var scenes: Array[String] = []
 
@@ -81,20 +68,95 @@ func _initialize() -> void:
 
 	if scenes.is_empty():
 		printerr("No scenes found.")
-		quit(1)
+		get_tree().quit(1)
 		return
 
 	print("Scenes to capture: ", scenes.size())
 
-	var output_dir := ProjectSettings.globalize_path("res://" + OUTPUT_DIR)
+	var output_dir := OS.get_user_data_dir().path_join(OUTPUT_DIR)
+	print("Output dir: ", output_dir)
 	DirAccess.make_dir_recursive_absolute(output_dir)
+
+	var dir_check := DirAccess.open(output_dir)
+	if dir_check == null:
+		printerr("FAIL: Could not open output dir: ", output_dir)
+		printerr("DirAccess error: ", DirAccess.get_open_error())
+	else:
+		print("Output dir opened OK")
+
 	_clear_output_dir(output_dir)
+
+	_setup_uploader()
 
 	for scene_path in scenes:
 		await _capture_scene(scene_path, output_dir)
 
+	# Web: 仮想 FS が quit 時に破棄される前にローカルサーバーへ送信する
+	if not _upload_base.is_empty():
+		await _upload_all(output_dir)
+
 	print("=== Done ===")
-	quit(0)
+	get_tree().quit(0)
+
+
+## アップロード先のベース URL を決定し、必要なら HTTPRequest を準備する。
+## Web エクスポートのみ同一オリジンへアップロードする。
+func _setup_uploader() -> void:
+	_upload_base = _get_upload_base_url()
+	if _upload_base.is_empty():
+		return
+	_http = HTTPRequest.new()
+	add_child(_http)
+	print("HTTP upload enabled: ", _upload_base)
+
+
+func _get_upload_base_url() -> String:
+	if OS.has_feature("web"):
+		var origin: Variant = JavaScriptBridge.eval("location.origin", true)
+		if origin is String and not (origin as String).is_empty():
+			return origin
+	return ""
+
+
+## 出力ディレクトリ内の全 PNG をローカルサーバーへ POST する。
+func _upload_all(output_dir: String) -> void:
+	var dir := DirAccess.open(output_dir)
+	if dir == null:
+		printerr("Upload: could not open ", output_dir)
+		return
+	var count := 0
+	dir.list_dir_begin()
+	var fname := dir.get_next()
+	while fname != "":
+		if not dir.current_is_dir() and fname.ends_with(".png"):
+			if await _upload_file(output_dir.path_join(fname), fname):
+				count += 1
+		fname = dir.get_next()
+	dir.list_dir_end()
+	print("Uploaded ", count, " screenshots")
+
+
+func _upload_file(path: String, fname: String) -> bool:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		printerr("  Upload FAIL: cannot read ", fname)
+		return false
+	var bytes := file.get_buffer(file.get_length())
+	file.close()
+
+	var url := _upload_base + UPLOAD_PATH + fname.uri_encode()
+	var err := _http.request_raw(url, ["Content-Type: image/png"], HTTPClient.METHOD_POST, bytes)
+	if err != OK:
+		printerr("  Upload FAIL: request error ", err, " for ", fname)
+		return false
+
+	var result: Array = await _http.request_completed
+	var code: int = result[1]
+	if code == 200:
+		print("  Uploaded: ", fname)
+		return true
+	printerr("  Upload FAIL: HTTP ", code, " for ", fname)
+	return false
 
 
 func _capture_scene(scene_path: String, output_dir: String) -> void:
@@ -108,11 +170,9 @@ func _capture_scene(scene_path: String, output_dir: String) -> void:
 	var stories := _load_stories(scene_path)
 
 	if stories.is_empty():
-		# stories 設定なし: デフォルトの 1 seed でキャプチャ
 		await _capture_with_story(scene_path, packed, output_dir,
-				{"name": "", "seed": VRT_DEFAULT_SEED, "delay_ms": 0, "script": ""})
+				{"name": "", "seed": VRT_DEFAULT_SEED, "delay_ms": 0, "script": "", "viewport_size": DEFAULT_VIEWPORT_SIZE})
 	else:
-		# stories 設定あり: 設定ファイルの seed・名前・オプションを使用
 		print("  Stories config: ", stories.size(), " stories")
 		for story in stories:
 			await _capture_with_story(scene_path, packed, output_dir, story)
@@ -123,30 +183,34 @@ func _capture_with_story(scene_path: String, packed: PackedScene, output_dir: St
 	var story_name: String = story["name"]
 	var delay_ms: int = story.get("delay_ms", 0)
 	var script_path: String = story.get("script", "")
+	var vp_size: Vector2i = story.get("viewport_size", DEFAULT_VIEWPORT_SIZE)
 
-	# Pattern 1: グローバル乱数 seed を固定（randf/randi 系を安定化）
 	seed(vrt_seed)
 
+	# SubViewportContainer で包むことで、Android の GLES3 バックエンドでも
+	# オフスクリーン SubViewport が確実に描画パスに乗るようにする
+	var container := SubViewportContainer.new()
+	container.stretch = false
+	get_tree().root.add_child(container)
+
 	var vp := SubViewport.new()
-	vp.size = VIEWPORT_SIZE
+	vp.size = vp_size
 	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	vp.transparent_bg = false
-	root.add_child(vp)
+	container.add_child(vp)
 
 	var scene_node := packed.instantiate()
 	vp.add_child(scene_node)
 
-	# フレーム安定化（レイアウト・アニメーション初期化を待つ）
 	for i in SETTLE_FRAMES:
-		await process_frame
+		await get_tree().process_frame
 
 	var base_name := scene_path.get_file().get_basename()
 	var prefix := base_name + ("_" + story_name if not story_name.is_empty() else "")
 
 	if not script_path.is_empty():
-		# 外部スクリプトに撮影タイミングを委任
 		var session := VRTSession.new()
-		session._tree = self
+		session._tree = get_tree()
 		session._vp = vp
 		session._output_dir = output_dir
 		session._prefix = prefix
@@ -161,14 +225,21 @@ func _capture_with_story(scene_path: String, packed: PackedScene, output_dir: St
 			else:
 				printerr("  FAIL: Script has no run() method: ", script_path)
 	else:
-		# 通常キャプチャ（delay_ms 指定があれば待機してから 1 枚撮影）
 		if delay_ms > 0:
-			await create_timer(delay_ms / 1000.0).timeout
+			await get_tree().create_timer(delay_ms / 1000.0).timeout
+
+		# 描画完了を待ってから読み出す（Android GL で灰色になる対策）
+		await RenderingServer.frame_post_draw
 
 		var img := vp.get_texture().get_image()
 		if img == null or img.is_empty():
 			printerr("  FAIL: image is null or empty (seed=", vrt_seed, ")")
 		else:
+			var center := img.get_pixel(img.get_width() / 2, img.get_height() / 2)
+			var control_size := (scene_node as Control).size if scene_node is Control else Vector2.ZERO
+			print("  [diag] ", img.get_width(), "x", img.get_height(),
+					" center_px=", center, " scene=", scene_node.get_class(),
+					" children=", scene_node.get_child_count(), " control_size=", control_size)
 			var file_name := prefix + ".png"
 			var save_path := output_dir.path_join(file_name)
 			var err := img.save_png(save_path)
@@ -179,8 +250,8 @@ func _capture_with_story(scene_path: String, packed: PackedScene, output_dir: St
 
 	if is_instance_valid(scene_node):
 		scene_node.queue_free()
-	vp.queue_free()
-	await process_frame
+	container.queue_free()
+	await get_tree().process_frame
 
 
 func _clear_output_dir(output_dir: String) -> void:
@@ -201,9 +272,6 @@ func _clear_output_dir(output_dir: String) -> void:
 	dir.list_dir_end()
 
 
-## シーンファイルの横にある .stories.json を読み込む。
-## 存在しない場合は空配列を返す。
-## 返り値の各要素: { "name": String, "seed": int, "delay_ms": int, "script": String }
 func _load_stories(scene_path: String) -> Array[Dictionary]:
 	var config_path := scene_path.get_basename() + STORIES_EXT
 	if not FileAccess.file_exists(config_path):
@@ -245,11 +313,17 @@ func _load_stories(scene_path: String) -> Array[Dictionary]:
 		var story_seed: int = int(entry["seed"])
 		var delay_ms: int = int(entry.get("delay_ms", 0))
 		var script_path: String = str(entry.get("script", ""))
+		var vp_size := DEFAULT_VIEWPORT_SIZE
+		if entry.has("viewport_size"):
+			var vp_raw: Variant = entry["viewport_size"]
+			if vp_raw is Array and vp_raw.size() == 2:
+				vp_size = Vector2i(int(vp_raw[0]), int(vp_raw[1]))
 		stories.append({
 			"name": story_name,
 			"seed": story_seed,
 			"delay_ms": delay_ms,
 			"script": script_path,
+			"viewport_size": vp_size,
 		})
 
 	return stories
@@ -258,6 +332,40 @@ func _load_stories(scene_path: String) -> Array[Dictionary]:
 func _find_all_scenes() -> Array[String]:
 	var result: Array[String] = []
 	_scan_dir("res://", result)
+	if result.is_empty():
+		# エクスポートビルドでは DirAccess で res:// を列挙できないため
+		# マニフェストファイルから読み込む
+		result = _load_scene_manifest()
+	return result
+
+
+func _load_scene_manifest() -> Array[String]:
+	var result: Array[String] = []
+	if not FileAccess.file_exists(SCENE_MANIFEST):
+		printerr("Scene manifest not found: ", SCENE_MANIFEST)
+		return result
+
+	var file := FileAccess.open(SCENE_MANIFEST, FileAccess.READ)
+	if file == null:
+		printerr("Could not open scene manifest: ", SCENE_MANIFEST)
+		return result
+
+	var json := JSON.new()
+	var err := json.parse(file.get_as_text())
+	file.close()
+	if err != OK:
+		printerr("Invalid JSON in scene manifest: ", SCENE_MANIFEST)
+		return result
+
+	var data: Variant = json.data
+	if data is Dictionary and data.has("scenes") and data["scenes"] is Array:
+		for entry: Variant in data["scenes"]:
+			if entry is String:
+				result.append(entry)
+		print("Loaded ", result.size(), " scenes from manifest")
+	else:
+		printerr("Scene manifest must have a 'scenes' array: ", SCENE_MANIFEST)
+
 	return result
 
 

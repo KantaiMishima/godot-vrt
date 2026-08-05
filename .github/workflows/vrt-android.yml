@@ -1,0 +1,198 @@
+name: VRT Android
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  capture-android:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses > /dev/null 2>&1 || true
+
+      - name: Install required SDK components
+        run: |
+          sdkmanager "build-tools;34.0.0" "platforms;android-34" "platforms;android-31" "platform-tools" "system-images;android-31;aosp_atd;x86_64" > /dev/null 2>&1
+
+      - name: Create debug keystore
+        run: |
+          mkdir -p ~/.android
+          keytool -genkeypair -v -keystore ~/.android/debug.keystore \
+            -storepass android -alias androiddebugkey -keypass android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Download Godot and export templates
+        run: |
+          RELEASE_TAG=$(curl -s "https://api.github.com/repos/godotengine/godot/releases/latest" | jq -r '.tag_name')
+          VERSION="${RELEASE_TAG}"
+          TEMPLATE_VERSION="${VERSION//-/.}"
+
+          FILENAME="Godot_v${VERSION}_linux.x86_64"
+          wget -q "https://github.com/godotengine/godot/releases/download/${VERSION}/${FILENAME}.zip"
+          unzip -q "${FILENAME}.zip"
+          mv "${FILENAME}" godot
+          chmod +x godot
+
+          TEMPLATES_FILE="Godot_v${VERSION}_export_templates.tpz"
+          wget -q "https://github.com/godotengine/godot/releases/download/${VERSION}/${TEMPLATES_FILE}"
+          TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/${TEMPLATE_VERSION}"
+          mkdir -p "${TEMPLATE_DIR}"
+          unzip -q "${TEMPLATES_FILE}" -d /tmp/templates
+          mv /tmp/templates/templates/* "${TEMPLATE_DIR}/"
+
+      - name: Import project resources
+        run: |
+          timeout 120 ./godot --headless --editor --quit --path tests 2>&1 || true
+
+      - name: Configure Godot Android settings
+        run: |
+          SETTINGS_FILE=$(find ~/.config/godot -name 'editor_settings*.tres' | head -1)
+          if [ -z "$SETTINGS_FILE" ]; then
+            SETTINGS_FILE=~/.config/godot/editor_settings-4.tres
+            mkdir -p ~/.config/godot
+            {
+              echo '[gd_resource type="EditorSettings" format=3]'
+              echo ''
+              echo '[resource]'
+            } > "$SETTINGS_FILE"
+          fi
+
+          sed -i '/export\/android\//d' "$SETTINGS_FILE"
+          {
+            echo "export/android/android_sdk_path = \"${ANDROID_HOME}\""
+            echo "export/android/java_sdk_path = \"${JAVA_HOME}\""
+            echo "export/android/debug_keystore = \"${HOME}/.android/debug.keystore\""
+            echo 'export/android/debug_keystore_user = "androiddebugkey"'
+            echo 'export/android/debug_keystore_pass = "android"'
+          } >> "$SETTINGS_FILE"
+
+      - name: Export Android APK
+        run: |
+          mkdir -p tests/build/android
+          ./godot --headless --path tests --export-debug "Android" build/android/vrt-tests.apk 2>&1 | tee /tmp/godot-export.log || true
+
+          if [ -f tests/build/android/vrt-tests.apk ]; then
+            echo "APK created successfully"
+            ls -la tests/build/android/vrt-tests.apk
+          else
+            echo "APK NOT created — export failed"
+            grep -i "error\|cannot\|fail" /tmp/godot-export.log | head -20
+            exit 1
+          fi
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Create emulator script
+        run: |
+          cat > /tmp/emulator-script.sh << 'SCRIPT'
+          #!/bin/bash
+          set -e
+
+          echo "=== Installing APK ==="
+          adb install tests/build/android/vrt-tests.apk
+
+          echo "=== Launching app ==="
+          adb shell monkey -p com.godot.vrt.tests -c android.intent.category.LAUNCHER 1
+
+          echo "=== Waiting for VRT capture to complete ==="
+          DONE=false
+          for i in $(seq 1 120); do
+            if adb logcat -d -s godot 2>/dev/null | grep -q "=== Done ==="; then
+              echo "VRT capture completed (after ${i}s)"
+              DONE=true
+              break
+            fi
+            if [ "$((i % 15))" -eq 0 ]; then
+              echo "Still waiting... (${i}s elapsed)"
+              echo "--- Recent Godot logcat ---"
+              adb logcat -d -s godot 2>/dev/null | tail -10
+              echo "---"
+            fi
+            sleep 1
+          done
+
+          if [ "$DONE" = "false" ]; then
+            echo "WARNING: Timed out waiting for VRT capture"
+            echo "=== Checking if app is still running ==="
+            adb shell pidof com.godot.vrt.tests || echo "App not running"
+          fi
+
+          echo "=== Full Godot logcat ==="
+          adb logcat -d -s godot 2>/dev/null | tail -300
+          echo "=== Full GodotStdout logcat ==="
+          adb logcat -d -s GodotStdout 2>/dev/null | tail -50
+          echo "=== Full stderr logcat ==="
+          adb logcat -d -s GodotStderr 2>/dev/null | tail -50
+
+          echo "=== Extracting screenshots ==="
+          mkdir -p vr_screenshots_android
+
+          FILE_LIST=$(adb shell run-as com.godot.vrt.tests ls files/vr_screenshots/ 2>/dev/null | tr -d '\r')
+          if [ -z "$FILE_LIST" ]; then
+            echo "No files found in files/vr_screenshots/"
+            adb shell run-as com.godot.vrt.tests ls -la files/ 2>&1 || echo "No files/ dir"
+          else
+            for f in $FILE_LIST; do
+              case "$f" in
+                *.png)
+                  adb exec-out run-as com.godot.vrt.tests cat "files/vr_screenshots/$f" > "vr_screenshots_android/$f"
+                  FSIZE=$(stat -c%s "vr_screenshots_android/$f" 2>/dev/null || echo "0")
+                  echo "Extracted: $f (${FSIZE} bytes)"
+                  if [ "$FSIZE" -lt 100 ]; then
+                    echo "  WARNING: File suspiciously small, may be corrupted"
+                  fi
+                  ;;
+              esac
+            done
+          fi
+
+          COUNT=$(find vr_screenshots_android -name "*.png" 2>/dev/null | wc -l)
+          echo "Total extracted: ${COUNT} screenshots"
+          SCRIPT
+          chmod +x /tmp/emulator-script.sh
+
+      - name: Start Xvfb for host GPU rendering
+        run: |
+          sudo apt-get install -y xvfb libgl1 mesa-utils libpulse0 libxcb-cursor0 libxkbcommon-x11-0 > /dev/null 2>&1 || true
+          Xvfb :99 -screen 0 1600x1200x24 &
+          sleep 2
+          echo "DISPLAY=:99" >> $GITHUB_ENV
+          DISPLAY=:99 glxinfo -B 2>/dev/null | head -10 || echo "glxinfo not available"
+
+      - name: Run on Android Emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          target: aosp_atd
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-audio -no-snapshot -no-boot-anim -gpu host
+          emulator-boot-timeout: 300
+          script: bash /tmp/emulator-script.sh
+
+      - name: Upload screenshots as artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: vrt-screenshots-android
+          path: vr_screenshots_android/
+          if-no-files-found: warn
